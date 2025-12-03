@@ -1,0 +1,208 @@
+/* ============================================
+   SETTINGS MODAL
+   ============================================ */
+
+.settings-section {
+    margin-bottom: var(--space-xl);
+}
+
+.settings-section:last-child {
+    margin-bottom: 0;
+}
+
+.settings-section h4 {
+    font-size: var(--font-size-lg);
+    font-weight: var(--font-weight-semibold);
+    color: var(--text-primary);
+    margin-bottom: var(--space-md);
+}
+
+.setting-item {
+    margin-bottom: var(--space-lg);
+}
+
+.setting-item:last-child {
+    margin-bottom: 0;
+}
+
+.setting-item label {
+    display: block;
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-medium);
+    color: var(--text-secondary);
+    margin-bottom: var(--space-sm);
+}
+
+.setting-item select,
+.setting-item input[type="text"],
+.setting-item input[type="email"] {
+    width: 100%;
+    padding: var(--space-md);
+    background: var(--bg-input);
+    border: 2px solid var(--border-primary);
+    border-radius: var(--radius-md);
+    font-size: var(--font-size-base);
+    color: var(--text-primary);
+    transition: all var(--transition-fast);
+}
+
+.setting-item select:focus,
+.setting-item input:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
+}
+
+.setting-value {
+    padding: var(--space-md);
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-primary);
+    border-radius: var(--radius-md);
+    color: var(--text-primary);
+}
+
+/* Toggle Switch */
+.setting-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--space-md);
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-primary);
+    border-radius: var(--radius-md);
+}
+
+.toggle-label {
+    flex: 1;
+    font-weight: var(--font-weight-medium);
+    color: var(--text-primary);
+}
+
+.toggle-switch {
+    position: relative;
+    width: 48px;
+    height: 24px;
+    background: var(--bg-secondary);
+    border: 2px solid var(--border-primary);
+    border-radius: var(--radius-full);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.toggle-switch.active {
+    background: var(--primary);
+    border-color: var(--primary);
+}
+
+.toggle-switch::after {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 16px;
+    height: 16px;
+    background: white;
+    border-radius: var(--radius-full);
+    transition: transform var(--transition-fast);
+}
+
+.toggle-switch.active::after {
+    transform: translateX(24px);
+}
+
+/* Button Group */
+.setting-button-group {
+    display: flex;
+    gap: var(--space-sm);
+}
+
+.setting-btn {
+    flex: 1;
+    padding: var(--space-sm) var(--space-md);
+    background: var(--bg-tertiary);
+    border: 2px solid var(--border-primary);
+    border-radius: var(--radius-md);
+    font-weight: var(--font-weight-medium);
+    color: var(--text-primary);
+    transition: all var(--transition-fast);
+}
+
+.setting-btn:hover {
+    background: var(--bg-secondary);
+    border-color: var(--border-secondary);
+}
+
+.setting-btn.active {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: white;
+}
+
+/* Account Section */
+.account-info {
+    display: flex;
+    align-items: center;
+    gap: var(--space-lg);
+    padding: var(--space-lg);
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-primary);
+    border-radius: var(--radius-lg);
+    margin-bottom: var(--space-lg);
+}
+
+.account-avatar {
+    width: 64px;
+    height: 64px;
+    border-radius: var(--radius-full);
+    background: var(--gradient-primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: var(--font-size-2xl);
+    font-weight: var(--font-weight-bold);
+    color: white;
+    flex-shrink: 0;
+}
+
+.account-details {
+    flex: 1;
+}
+
+.account-name {
+    font-size: var(--font-size-lg);
+    font-weight: var(--font-weight-semibold);
+    color: var(--text-primary);
+    margin-bottom: var(--space-xs);
+}
+
+.account-email {
+    font-size: var(--font-size-sm);
+    color: var(--text-secondary);
+}
+
+/* Danger Zone */
+.settings-danger {
+    padding: var(--space-lg);
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid var(--error);
+    border-radius: var(--radius-lg);
+}
+
+.settings-danger h4 {
+    color: var(--error);
+}
+
+.danger-btn {
+    width: 100%;
+    padding: var(--space-md);
+    background: transparent;
+    border: 2px solid var(--error);
+    border-radius: var(--radius-md);
+    color: var(--error);
+    font-weight: var(--font-weight-semibold);
+    transition: all var(--transition-fast);
+}
+
+.danger-btn:hover {
+    background: var(--error);
+    color: white;
+}
