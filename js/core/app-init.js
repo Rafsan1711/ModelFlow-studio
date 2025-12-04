@@ -5,7 +5,7 @@
  * ============================================
  */
 
-import { auth, onAuthStateChanged } from '../auth/firebase-config.js';
+import { auth } from '../auth/firebase-config.js';
 import { initAuthUI } from '../auth/auth-ui.js';
 import { initChatUI } from '../chat/chat-ui.js';
 import { initSidebar } from '../ui/sidebar-manager.js';
@@ -54,7 +54,7 @@ async function initApp() {
  */
 function checkAuth() {
     return new Promise((resolve) => {
-        const unsubscribe = onAuthStateChanged(auth, (user) => {
+        const unsubscribe = firebase.auth().onAuthStateChanged((user) => {
             unsubscribe();
             resolve(user);
         });
@@ -116,7 +116,7 @@ function showError(message) {
  * Handle auth state changes (for logout/login)
  */
 export function setupAuthListener() {
-    onAuthStateChanged(auth, (user) => {
+    firebase.auth().onAuthStateChanged((user) => {
         if (user) {
             if (!window.NexusAI.initialized) {
                 showMainApp();
