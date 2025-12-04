@@ -1,29 +1,36 @@
 /* ============================================
-   CHAT INTERFACE - Messages Container
+   CHAT INTERFACE - MODELFLOW STYLE
+   No bubbles, clean and professional
    ============================================ */
 
 .messages-container {
     flex: 1;
     overflow-y: auto;
     overflow-x: hidden;
-    padding: var(--space-lg);
+    padding: var(--space-xl) var(--space-lg);
     display: flex;
     flex-direction: column;
-    gap: var(--space-lg);
+    gap: var(--space-xl);
     min-height: 0;
 }
 
-/* Message Item */
+/* Message Item - No Bubbles */
 .message {
     display: flex;
     gap: var(--space-md);
     animation: messageSlideIn 0.3s ease;
+    padding: var(--space-lg) 0;
+    border-bottom: 1px solid var(--border-primary);
+}
+
+.message:last-child {
+    border-bottom: none;
 }
 
 @keyframes messageSlideIn {
     from {
         opacity: 0;
-        transform: translateY(20px);
+        transform: translateY(10px);
     }
     to {
         opacity: 1;
@@ -31,15 +38,11 @@
     }
 }
 
-.message.user {
-    flex-direction: row-reverse;
-}
-
-/* Avatar */
+/* Avatar - Smaller and cleaner */
 .message-avatar {
-    width: 36px;
-    height: 36px;
-    border-radius: var(--radius-full);
+    width: 32px;
+    height: 32px;
+    border-radius: var(--radius-md);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -49,60 +52,50 @@
 }
 
 .message.user .message-avatar {
-    background: var(--gradient-primary);
+    background: var(--primary);
     color: white;
 }
 
 .message.ai .message-avatar {
     background: var(--bg-tertiary);
     color: var(--primary);
+    font-size: 1.2rem;
 }
 
-/* Message Content */
+/* Message Content - No bubble wrapper */
 .message-content {
     flex: 1;
-    max-width: 75%;
+    max-width: 100%;
     display: flex;
     flex-direction: column;
     gap: var(--space-sm);
 }
 
-.message.user .message-content {
-    align-items: flex-end;
-}
-
-/* Message Bubble */
+/* Message Bubble - Removed borders, clean background */
 .message-bubble {
-    padding: var(--space-md) var(--space-lg);
-    border-radius: var(--radius-lg);
     word-wrap: break-word;
     overflow-wrap: break-word;
+    color: var(--text-primary);
+    font-size: var(--font-size-base);
+    line-height: 1.6;
 }
 
 .message.user .message-bubble {
-    background: var(--gradient-primary);
-    color: white;
-    border-bottom-right-radius: var(--radius-sm);
+    color: var(--text-primary);
 }
 
 .message.ai .message-bubble {
-    background: var(--bg-secondary);
-    border: 1px solid var(--border-primary);
     color: var(--text-primary);
-    border-bottom-left-radius: var(--radius-sm);
 }
 
-/* Message Metadata */
+/* Message Metadata - Subtle */
 .message-meta {
     display: flex;
     align-items: center;
     gap: var(--space-sm);
     font-size: var(--font-size-xs);
     color: var(--text-tertiary);
-}
-
-.message.user .message-meta {
-    justify-content: flex-end;
+    margin-top: var(--space-xs);
 }
 
 .message-time {
@@ -120,20 +113,17 @@
     height: 12px;
 }
 
-/* Typing Indicator */
+/* Typing Indicator - Clean */
 .typing-indicator {
     display: flex;
     gap: var(--space-sm);
-    padding: var(--space-md) var(--space-lg);
-    background: var(--bg-secondary);
-    border: 1px solid var(--border-primary);
-    border-radius: var(--radius-lg);
+    padding: var(--space-md);
     width: fit-content;
 }
 
 .typing-dot {
-    width: 8px;
-    height: 8px;
+    width: 6px;
+    height: 6px;
     background: var(--primary);
     border-radius: var(--radius-full);
     animation: typingBounce 1.4s ease-in-out infinite;
@@ -148,26 +138,32 @@
         transform: translateY(0);
     }
     30% {
-        transform: translateY(-8px);
+        transform: translateY(-6px);
     }
 }
 
 /* Error Message */
 .message.error .message-bubble {
-    background: rgba(239, 68, 68, 0.1);
-    border-color: var(--error);
     color: var(--error);
 }
 
 /* System Message */
 .message.system {
     justify-content: center;
+    border-bottom: none;
 }
 
 .message.system .message-bubble {
     background: var(--bg-tertiary);
-    border: 1px solid var(--border-secondary);
+    border: 1px solid var(--border-primary);
+    padding: var(--space-sm) var(--space-md);
+    border-radius: var(--radius-md);
     color: var(--text-secondary);
     font-size: var(--font-size-sm);
     text-align: center;
+}
+
+/* User message - Right aligned name */
+.message.user .message-meta {
+    justify-content: flex-end;
 }
