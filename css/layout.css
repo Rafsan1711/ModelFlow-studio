@@ -223,8 +223,8 @@
 .send-btn {
     width: 40px;
     height: 40px;
-    border-radius: var(--radius-full);
-    background: var(--gradient-primary);
+    border-radius: var(--radius-md);
+    background: var(--primary);
     display: flex;
     align-items: center;
     justify-content: center;
