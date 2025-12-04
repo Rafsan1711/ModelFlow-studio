@@ -1,0 +1,8 @@
+# Netlify redirects file
+# Place this file in your project root or public folder
+
+# SPA routing - redirect all routes to index.html
+/*    /index.html   200
+
+# This ensures that all routes (like /chat/:id) will serve index.html
+# and let your client-side router handle the routing
