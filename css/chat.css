@@ -1,6 +1,5 @@
 /* ============================================
-   CHAT INTERFACE - MODELFLOW STYLE
-   No bubbles, clean and professional
+   CHAT INTERFACE - FIXED & MOBILE RESPONSIVE
    ============================================ */
 
 .messages-container {
@@ -12,15 +11,19 @@
     flex-direction: column;
     gap: var(--space-xl);
     min-height: 0;
+    width: 100%;
+    max-width: 100%;
 }
 
-/* Message Item - No Bubbles */
+/* Message Item */
 .message {
     display: flex;
     gap: var(--space-md);
     animation: messageSlideIn 0.3s ease;
     padding: var(--space-lg) 0;
     border-bottom: 1px solid var(--border-primary);
+    width: 100%;
+    max-width: 100%;
 }
 
 .message:last-child {
@@ -38,7 +41,36 @@
     }
 }
 
-/* Avatar - Smaller and cleaner */
+/* USER MESSAGE - RIGHT ALIGNED */
+.message.user {
+    flex-direction: row-reverse;
+    justify-content: flex-start;
+}
+
+.message.user .message-content {
+    align-items: flex-end;
+}
+
+.message.user .message-bubble {
+    background: var(--primary);
+    color: white;
+    border-radius: var(--radius-lg);
+    padding: var(--space-md) var(--space-lg);
+    max-width: 85%;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+}
+
+/* AI MESSAGE - LEFT ALIGNED */
+.message.ai {
+    flex-direction: row;
+}
+
+.message.ai .message-content {
+    align-items: flex-start;
+}
+
+/* Avatar */
 .message-avatar {
     width: 32px;
     height: 32px;
@@ -62,33 +94,34 @@
     font-size: 1.2rem;
 }
 
-/* Message Content - No bubble wrapper */
+/* Message Content - CRITICAL FIX FOR MOBILE */
 .message-content {
     flex: 1;
-    max-width: 100%;
+    max-width: calc(100% - 48px); /* Avatar width + gap */
+    min-width: 0; /* Critical for flexbox overflow */
     display: flex;
     flex-direction: column;
     gap: var(--space-sm);
+    overflow-x: hidden;
 }
 
-/* Message Bubble - Removed borders, clean background */
+/* Message Bubble */
 .message-bubble {
     word-wrap: break-word;
     overflow-wrap: break-word;
+    word-break: break-word;
     color: var(--text-primary);
     font-size: var(--font-size-base);
     line-height: 1.6;
-}
-
-.message.user .message-bubble {
-    color: var(--text-primary);
+    max-width: 100%;
+    overflow-x: hidden;
 }
 
 .message.ai .message-bubble {
     color: var(--text-primary);
 }
 
-/* Message Metadata - Subtle */
+/* Message Metadata */
 .message-meta {
     display: flex;
     align-items: center;
@@ -113,7 +146,7 @@
     height: 12px;
 }
 
-/* Typing Indicator - Clean */
+/* Typing Indicator */
 .typing-indicator {
     display: flex;
     gap: var(--space-sm);
@@ -163,7 +196,57 @@
     text-align: center;
 }
 
-/* User message - Right aligned name */
-.message.user .message-meta {
-    justify-content: flex-end;
+/* MOBILE RESPONSIVE FIXES */
+@media (max-width: 768px) {
+    .messages-container {
+        padding: var(--space-md);
+        padding-bottom: calc(var(--space-md) + 140px);
+    }
+
+    .message {
+        padding: var(--space-md) 0;
+        gap: var(--space-sm);
+    }
+
+    .message-content {
+        max-width: calc(100% - 40px);
+    }
+
+    .message.user .message-bubble {
+        max-width: 90%;
+        padding: var(--space-sm) var(--space-md);
+    }
+
+    .message-avatar {
+        width: 28px;
+        height: 28px;
+        font-size: 12px;
+    }
+
+    .message-bubble {
+        font-size: var(--font-size-sm);
+    }
+
+    .message-meta {
+        font-size: 10px;
+    }
+}
+
+@media (max-width: 480px) {
+    .messages-container {
+        padding: var(--space-sm);
+    }
+
+    .message-content {
+        max-width: calc(100% - 36px);
+    }
+
+    .message.user .message-bubble {
+        max-width: 95%;
+    }
+
+    .message-avatar {
+        width: 24px;
+        height: 24px;
+    }
 }
