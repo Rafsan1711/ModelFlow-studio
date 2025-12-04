@@ -162,17 +162,19 @@ async function handleGoogleSignin() {
  * Set button loading state
  */
 function setButtonLoading(button, isLoading) {
+    if (!button) return;
+    
     const btnText = button.querySelector('.btn-text');
     const btnLoader = button.querySelector('.btn-loader');
 
     if (isLoading) {
         button.disabled = true;
-        btnText.style.display = 'none';
-        btnLoader.style.display = 'block';
+        if (btnText) btnText.style.display = 'none';
+        if (btnLoader) btnLoader.style.display = 'block';
     } else {
         button.disabled = false;
-        btnText.style.display = 'block';
-        btnLoader.style.display = 'none';
+        if (btnText) btnText.style.display = 'block';
+        if (btnLoader) btnLoader.style.display = 'none';
     }
 }
 
