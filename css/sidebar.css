@@ -63,7 +63,7 @@
 .new-chat-btn {
     margin: var(--space-lg);
     padding: var(--space-md);
-    background: var(--gradient-primary);
+    background: var(--primary);
     border-radius: var(--radius-lg);
     display: flex;
     align-items: center;
@@ -130,7 +130,7 @@
     width: 32px;
     height: 32px;
     border-radius: var(--radius-md);
-    background: var(--gradient-primary);
+    background: var(--primary);
     display: flex;
     align-items: center;
     justify-content: center;
