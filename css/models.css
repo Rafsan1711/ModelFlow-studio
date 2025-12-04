@@ -38,9 +38,9 @@
 }
 
 .model-btn.active {
-    background: var(--bg-primary);
+    background: var(--primary);
     border-color: var(--primary);
-    color: var(--primary);
+    color: white;
 }
 
 /* Model Badge (Pro, Free, etc.) */
@@ -127,7 +127,7 @@
     width: 32px;
     height: 32px;
     border-radius: var(--radius-md);
-    background: var(--gradient-primary);
+    background: var(--primary);
     display: flex;
     align-items: center;
     justify-content: center;
