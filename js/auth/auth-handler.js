@@ -5,21 +5,14 @@
  * ============================================
  */
 
-import {
-    auth,
-    createUserWithEmailAndPassword,
-    signInWithEmailAndPassword,
-    signOut,
-    GoogleAuthProvider,
-    signInWithPopup
-} from './firebase-config.js';
+import { auth } from './firebase-config.js';
 
 /**
  * Sign up with email/password
  */
 export async function signUpWithEmail(email, password) {
     try {
-        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        const userCredential = await auth.createUserWithEmailAndPassword(email, password);
         console.log('✅ User created:', userCredential.user.email);
         return { success: true, user: userCredential.user };
     } catch (error) {
@@ -33,7 +26,7 @@ export async function signUpWithEmail(email, password) {
  */
 export async function signInWithEmail(email, password) {
     try {
-        const userCredential = await signInWithEmailAndPassword(auth, email, password);
+        const userCredential = await auth.signInWithEmailAndPassword(email, password);
         console.log('✅ User signed in:', userCredential.user.email);
         return { success: true, user: userCredential.user };
     } catch (error) {
@@ -47,8 +40,8 @@ export async function signInWithEmail(email, password) {
  */
 export async function signInWithGoogle() {
     try {
-        const provider = new GoogleAuthProvider();
-        const result = await signInWithPopup(auth, provider);
+        const provider = new firebase.auth.GoogleAuthProvider();
+        const result = await auth.signInWithPopup(provider);
         console.log('✅ Google signin successful:', result.user.email);
         return { success: true, user: result.user };
     } catch (error) {
@@ -62,7 +55,7 @@ export async function signInWithGoogle() {
  */
 export async function handleSignOut() {
     try {
-        await signOut(auth);
+        await auth.signOut();
         console.log('✅ User signed out');
         
         // Clear local state
