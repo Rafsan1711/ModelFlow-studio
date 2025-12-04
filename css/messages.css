@@ -1,12 +1,22 @@
 /* ============================================
-   MESSAGE FORMATTING - MODELFLOW STYLE
-   Clean, no bubbles, professional
+   AI MESSAGE FORMATTING - ENHANCED MARKDOWN
+   ChatGPT/Claude Style Beautiful Output
    ============================================ */
 
-/* AI Message Content Formatting */
+/* AI Content Container - CRITICAL OVERFLOW FIX */
 .ai-content {
     line-height: 1.7;
     color: var(--text-primary);
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+}
+
+.ai-content * {
+    max-width: 100%;
+    overflow-x: hidden;
 }
 
 /* Paragraphs */
@@ -21,7 +31,7 @@
     margin-bottom: 0;
 }
 
-/* Headings */
+/* Headings - Beautiful Typography */
 .ai-content h1,
 .ai-content h2,
 .ai-content h3 {
@@ -29,6 +39,7 @@
     margin-bottom: var(--space-md);
     font-weight: var(--font-weight-bold);
     color: var(--text-primary);
+    line-height: 1.3;
 }
 
 .ai-content h1:first-child,
@@ -39,10 +50,14 @@
 
 .ai-content h1 {
     font-size: var(--font-size-2xl);
+    border-bottom: 2px solid var(--border-primary);
+    padding-bottom: var(--space-sm);
 }
 
 .ai-content h2 {
     font-size: var(--font-size-xl);
+    border-bottom: 1px solid var(--border-primary);
+    padding-bottom: var(--space-xs);
 }
 
 .ai-content h3 {
@@ -57,46 +72,76 @@
 
 .ai-content em {
     font-style: italic;
-    color: var(--text-secondary);
+    color: var(--text-primary);
 }
 
-/* Lists */
+/* Lists - Beautiful Bullets */
 .ai-content ul,
 .ai-content ol {
     margin: var(--space-md) 0;
     padding-left: var(--space-xl);
+    max-width: 100%;
+    overflow-x: hidden;
 }
 
 .ai-content ul {
-    list-style: disc;
+    list-style: none;
+}
+
+.ai-content ul li {
+    position: relative;
+    padding-left: var(--space-md);
+}
+
+.ai-content ul li::before {
+    content: "•";
+    position: absolute;
+    left: 0;
+    color: var(--primary);
+    font-weight: bold;
+    font-size: 1.2em;
 }
 
 .ai-content ol {
     list-style: decimal;
+    list-style-position: outside;
 }
 
 .ai-content li {
     margin-bottom: var(--space-sm);
     line-height: 1.7;
     color: var(--text-primary);
+    word-wrap: break-word;
+    overflow-wrap: break-word;
 }
 
 .ai-content li::marker {
     color: var(--primary);
+    font-weight: var(--font-weight-semibold);
 }
 
-/* Inline Code */
+/* Nested Lists */
+.ai-content ul ul,
+.ai-content ol ol,
+.ai-content ul ol,
+.ai-content ol ul {
+    margin: var(--space-sm) 0;
+}
+
+/* Inline Code - Beautiful Highlighting */
 .ai-content code {
     background: var(--code-bg);
-    color: var(--primary-light);
-    padding: 3px 8px;
+    color: #60a5fa;
+    padding: 2px 8px;
     border-radius: var(--radius-sm);
     font-family: var(--font-mono);
     font-size: 0.9em;
     border: 1px solid var(--code-border);
+    word-wrap: break-word;
+    overflow-wrap: break-word;
 }
 
-/* Code Blocks - ModelFlow Style */
+/* Code Blocks - Enhanced Professional Style */
 .ai-content pre {
     background: var(--code-bg);
     border: 1px solid var(--code-border);
@@ -104,6 +149,7 @@
     padding: 0;
     margin: var(--space-md) 0;
     overflow: hidden;
+    max-width: 100%;
 }
 
 .ai-content pre code {
@@ -115,9 +161,12 @@
     line-height: 1.6;
     display: block;
     overflow-x: auto;
+    max-width: 100%;
+    white-space: pre;
+    word-wrap: normal;
 }
 
-/* Code Block Header - ModelFlow Style */
+/* Code Block Header */
 .code-block-header {
     display: flex;
     align-items: center;
@@ -144,6 +193,7 @@
     color: var(--text-secondary);
     transition: all var(--transition-fast);
     font-weight: var(--font-weight-medium);
+    cursor: pointer;
 }
 
 .copy-code-btn:hover {
@@ -152,31 +202,52 @@
     border-color: var(--primary);
 }
 
-/* Blockquote */
+.copy-code-btn:active {
+    transform: scale(0.95);
+}
+
+/* Blockquote - Beautiful Styling */
 .ai-content blockquote {
     border-left: 4px solid var(--primary);
     padding-left: var(--space-lg);
     margin: var(--space-md) 0;
     color: var(--text-secondary);
     font-style: italic;
+    background: rgba(37, 99, 235, 0.05);
+    padding: var(--space-md) var(--space-lg);
+    border-radius: 0 var(--radius-md) var(--radius-md) 0;
 }
 
-/* Links */
+/* Links - Beautiful Hover Effect */
 .ai-content a {
     color: var(--primary);
     text-decoration: underline;
     transition: color var(--transition-fast);
+    word-wrap: break-word;
+    overflow-wrap: break-word;
 }
 
 .ai-content a:hover {
-    color: var(--primary-hover);
+    color: var(--primary-light);
+    text-decoration: none;
 }
 
-/* Tables */
+/* Tables - Professional Style */
 .ai-content table {
     width: 100%;
+    max-width: 100%;
     border-collapse: collapse;
     margin: var(--space-md) 0;
+    overflow-x: auto;
+    display: block;
+}
+
+.ai-content table thead {
+    display: table-header-group;
+}
+
+.ai-content table tbody {
+    display: table-row-group;
 }
 
 .ai-content th,
@@ -184,6 +255,8 @@
     padding: var(--space-sm) var(--space-md);
     border: 1px solid var(--border-primary);
     text-align: left;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
 }
 
 .ai-content th {
@@ -196,10 +269,14 @@
     color: var(--text-primary);
 }
 
+.ai-content tr:hover {
+    background: rgba(37, 99, 235, 0.05);
+}
+
 /* Horizontal Rule */
 .ai-content hr {
     border: none;
-    border-top: 1px solid var(--border-primary);
+    border-top: 2px solid var(--border-primary);
     margin: var(--space-xl) 0;
 }
 
@@ -229,11 +306,12 @@
 /* Image Support */
 .ai-content img {
     max-width: 100%;
+    height: auto;
     border-radius: var(--radius-md);
     margin: var(--space-md) 0;
 }
 
-/* Info/Warning Boxes */
+/* Info/Warning/Error Boxes */
 .message-info-box {
     padding: var(--space-md);
     background: rgba(37, 99, 235, 0.1);
@@ -259,4 +337,93 @@
     border-left: 4px solid var(--error);
     border-radius: var(--radius-md);
     margin: var(--space-md) 0;
+}
+
+/* Definition Lists */
+.ai-content dl {
+    margin: var(--space-md) 0;
+}
+
+.ai-content dt {
+    font-weight: var(--font-weight-bold);
+    color: var(--text-primary);
+    margin-bottom: var(--space-xs);
+}
+
+.ai-content dd {
+    margin-left: var(--space-xl);
+    margin-bottom: var(--space-md);
+    color: var(--text-secondary);
+}
+
+/* MOBILE RESPONSIVE */
+@media (max-width: 768px) {
+    .ai-content {
+        font-size: var(--font-size-sm);
+    }
+
+    .ai-content h1 {
+        font-size: var(--font-size-xl);
+    }
+
+    .ai-content h2 {
+        font-size: var(--font-size-lg);
+    }
+
+    .ai-content h3 {
+        font-size: var(--font-size-base);
+    }
+
+    .ai-content pre code {
+        font-size: 12px;
+        padding: var(--space-md);
+    }
+
+    .ai-content ul,
+    .ai-content ol {
+        padding-left: var(--space-lg);
+    }
+
+    .ai-content table {
+        font-size: var(--font-size-xs);
+    }
+
+    .code-block-header {
+        padding: var(--space-xs) var(--space-sm);
+    }
+
+    .copy-code-btn {
+        font-size: 10px;
+        padding: 4px 8px;
+    }
+}
+
+@media (max-width: 480px) {
+    .ai-content pre code {
+        font-size: 11px;
+        padding: var(--space-sm);
+    }
+
+    .ai-content {
+        font-size: 13px;
+    }
+}
+
+/* Scrollbar for code blocks */
+.ai-content pre code::-webkit-scrollbar {
+    height: 6px;
+}
+
+.ai-content pre code::-webkit-scrollbar-track {
+    background: var(--bg-primary);
+    border-radius: var(--radius-sm);
+}
+
+.ai-content pre code::-webkit-scrollbar-thumb {
+    background: var(--border-secondary);
+    border-radius: var(--radius-sm);
+}
+
+.ai-content pre code::-webkit-scrollbar-thumb:hover {
+    background: var(--text-tertiary);
 }
