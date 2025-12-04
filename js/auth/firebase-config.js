@@ -34,14 +34,4 @@ try {
 // Export Firebase instances
 export { app, auth, database };
 
-// Export Firebase methods
-export const {
-    createUserWithEmailAndPassword,
-    signInWithEmailAndPassword,
-    signOut,
-    onAuthStateChanged,
-    GoogleAuthProvider,
-    signInWithPopup
-} = firebase.auth;
-
 console.log('📦 Firebase Config module loaded');
