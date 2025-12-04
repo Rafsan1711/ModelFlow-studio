@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NexusAI - Your Intelligent Assistant</title>
+    <title>ModelFlow Studio - Your Intelligent Assistant</title>
     
     <!-- Favicon -->
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='0.9em' font-size='90'>🤖</text></svg>">
@@ -30,7 +30,7 @@
     <!-- Global Loader -->
     <div id="loader" class="loader">
         <div class="loader-spinner"></div>
-        <p class="loader-text">Loading NexusAI...</p>
+        <p class="loader-text">Loading ModelFlow Studio...</p>
     </div>
 
     <!-- Auth Screen -->
@@ -52,7 +52,7 @@
                             </defs>
                         </svg>
                     </div>
-                    <h1 class="auth-title">NexusAI</h1>
+                    <h1 class="auth-title">ModelFlow Studio</h1>
                     <p class="auth-subtitle">Your Intelligent Assistant</p>
                 </div>
 
@@ -144,7 +144,7 @@
                             </defs>
                         </svg>
                     </div>
-                    <span class="logo-text">NexusAI</span>
+                    <span class="logo-text">ModelFlow Studio</span>
                 </div>
                 <button id="close-sidebar-btn" class="close-sidebar-btn">
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -221,7 +221,7 @@
                         </defs>
                     </svg>
                 </div>
-                <h2 class="empty-title">Welcome to NexusAI</h2>
+                <h2 class="empty-title">Welcome to ModelFlow Studio</h2>
                 <p class="empty-subtitle">Your intelligent assistant for everything</p>
                 
                 <div class="example-prompts">
@@ -255,33 +255,13 @@
 
             <!-- Input Area -->
             <div class="input-area">
-                <!-- Model Selector -->
-                <div id="model-selector" class="model-selector">
-                    <button class="model-btn active" data-model="gpt-4">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                            <circle cx="12" cy="12" r="10"/>
-                        </svg>
-                        <span>GPT-4</span>
-                    </button>
-                    <button class="model-btn" data-model="claude">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                            <rect x="4" y="4" width="16" height="16" rx="2"/>
-                        </svg>
-                        <span>Claude</span>
-                    </button>
-                    <button class="model-btn" data-model="gemini">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                            <polygon points="12,2 2,7 12,12 22,7"/>
-                        </svg>
-                        <span>Gemini</span>
-                    </button>
-                </div>
+                <!-- Removed Model Selector per user request -->
 
                 <!-- Input Box -->
                 <div class="input-wrapper">
                     <textarea 
                         id="message-input" 
-                        placeholder="Message NexusAI..." 
+                        placeholder="Message ModelFlow Studio..." 
                         rows="1"
                         maxlength="4000"
                     ></textarea>
@@ -323,10 +303,8 @@
                     <div class="setting-item">
                         <label>Preferred AI Model</label>
                         <select id="default-model-select">
-                            <option value="">Ask me every time</option>
-                            <option value="gpt-4">GPT-4</option>
-                            <option value="claude">Claude</option>
-                            <option value="gemini">Gemini</option>
+                            <option value="gpt-oss-20b">GPT-OSS 20B (Default)</option>
+                            <option value="gpt-oss-120b">GPT-OSS 120B</option>
                         </select>
                     </div>
                 </div>

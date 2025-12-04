@@ -22,7 +22,7 @@ window.NexusAI = {
  * Initialize application
  */
 async function initApp() {
-    console.log('🚀 NexusAI - Initializing...');
+    console.log('🚀 ModelFlow Studio - Initializing...');
 
     try {
         // Wait for auth state
@@ -40,7 +40,7 @@ async function initApp() {
 
         hideLoader();
         window.NexusAI.initialized = true;
-        console.log('✅ NexusAI initialized successfully');
+        console.log('✅ ModelFlow Studio initialized successfully');
 
     } catch (error) {
         console.error('❌ Initialization error:', error);

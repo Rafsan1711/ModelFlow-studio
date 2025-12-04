@@ -7,7 +7,7 @@
 
 import { handleSendMessage } from './message-handler.js';
 import { loadAllChats } from './chat-manager.js';
-import { initModelSelector } from '../ui/model-selector.js';
+// import { initModelSelector } from '../ui/model-selector.js'; // Removed as selector is gone
 
 let messageInput;
 let sendBtn;
@@ -29,8 +29,8 @@ export async function initChatUI() {
     // Setup event listeners
     setupEventListeners();
 
-    // Initialize model selector
-    initModelSelector();
+    // Initialize model selector - REMOVED
+    // initModelSelector();
 
     // Load chats
     await loadChats();

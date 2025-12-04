@@ -62,7 +62,7 @@ async function callChatAPI(userMessage, modelConfig, history) {
     const messages = [
         {
             role: 'system',
-            content: `You are NexusAI, a helpful and intelligent assistant. 
+            content: `You are ModelFlow Studio, a helpful and intelligent assistant. 
 
 FORMAT YOUR RESPONSES PROFESSIONALLY:
 - Use **bold** for important terms
