@@ -1,7 +1,7 @@
 /**
  * ============================================
- * PROFESSIONAL MARKDOWN PARSER
- * ChatGPT/Claude Style Rich Formatting
+ * ULTIMATE PROFESSIONAL MARKDOWN PARSER
+ * With Highlight.js Integration
  * ============================================
  */
 
@@ -13,16 +13,29 @@ export function parseMarkdown(text) {
 
     let html = text;
 
-    // Code blocks FIRST (before any other processing)
-    html = parseCodeBlocks(html);
+    // Code blocks FIRST (preserve them)
+    const codeBlocks = [];
+    html = html.replace(/```(\w+)?\n([\s\S]*?)```/g, (match, language, code) => {
+        const placeholder = `___CODE_BLOCK_${codeBlocks.length}___`;
+        codeBlocks.push({ language: language || 'plaintext', code: code.trim() });
+        return placeholder;
+    });
 
-    // Escape HTML in non-code content
-    html = escapeNonCodeHtml(html);
+    // Inline code (preserve)
+    const inlineCodes = [];
+    html = html.replace(/`([^`]+)`/g, (match, code) => {
+        const placeholder = `___INLINE_CODE_${inlineCodes.length}___`;
+        inlineCodes.push(code);
+        return placeholder;
+    });
 
-    // Headings with beautiful icons
-    html = html.replace(/^### (.+)$/gm, '<h3><span class="heading-icon">📌</span>$1</h3>');
-    html = html.replace(/^## (.+)$/gm, '<h2><span class="heading-icon">📍</span>$1</h2>');
-    html = html.replace(/^# (.+)$/gm, '<h1><span class="heading-icon">✨</span>$1</h1>');
+    // Escape HTML
+    html = escapeHtml(html);
+
+    // Headings (clean, no icons)
+    html = html.replace(/^### (.+)$/gm, '<h3>$1</h3>');
+    html = html.replace(/^## (.+)$/gm, '<h2>$1</h2>');
+    html = html.replace(/^# (.+)$/gm, '<h1>$1</h1>');
 
     // Bold (must come before italic)
     html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
@@ -35,35 +48,32 @@ export function parseMarkdown(text) {
     // Strikethrough
     html = html.replace(/~~(.+?)~~/g, '<del>$1</del>');
 
-    // Inline code (not inside code blocks)
-    html = html.replace(/`([^`]+)`/g, '<code class="inline-code">$1</code>');
+    // Links
+    html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
 
-    // Links with icon
-    html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer"><span class="link-icon">🔗</span>$1<span class="external-icon">↗</span></a>');
+    // Blockquotes
+    html = html.replace(/^&gt; (.+)$/gm, '<blockquote>$1</blockquote>');
+    html = html.replace(/^> (.+)$/gm, '<blockquote>$1</blockquote>');
 
-    // Blockquotes with beautiful styling
-    html = html.replace(/^&gt; (.+)$/gm, '<blockquote><span class="quote-icon">💬</span>$1</blockquote>');
-    html = html.replace(/^> (.+)$/gm, '<blockquote><span class="quote-icon">💬</span>$1</blockquote>');
-
-    // Unordered lists with custom bullets
+    // Unordered lists
     html = parseUnorderedLists(html);
 
-    // Ordered lists with numbers
+    // Ordered lists
     html = parseOrderedLists(html);
 
     // Tables
     html = parseTables(html);
 
     // Horizontal rules
-    html = html.replace(/^---$/gm, '<hr class="divider">');
-    html = html.replace(/^\*\*\*$/gm, '<hr class="divider">');
+    html = html.replace(/^---$/gm, '<hr>');
+    html = html.replace(/^\*\*\*$/gm, '<hr>');
 
-    // Task lists (checkboxes)
+    // Task lists
     html = html.replace(/^- \[ \] (.+)$/gm, '<div class="task-item"><input type="checkbox" disabled><span>$1</span></div>');
     html = html.replace(/^- \[x\] (.+)$/gm, '<div class="task-item"><input type="checkbox" checked disabled><span class="completed">$1</span></div>');
 
     // Highlights
-    html = html.replace(/==(.+?)==/g, '<mark class="highlight">$1</mark>');
+    html = html.replace(/==(.+?)==/g, '<mark>$1</mark>');
 
     // Info boxes
     html = html.replace(/^\[!NOTE\] (.+)$/gm, '<div class="info-box note"><span class="box-icon">ℹ️</span><span class="box-content">$1</span></div>');
@@ -71,12 +81,19 @@ export function parseMarkdown(text) {
     html = html.replace(/^\[!WARNING\] (.+)$/gm, '<div class="info-box warning"><span class="box-icon">⚠️</span><span class="box-content">$1</span></div>');
     html = html.replace(/^\[!IMPORTANT\] (.+)$/gm, '<div class="info-box important"><span class="box-icon">🔥</span><span class="box-content">$1</span></div>');
 
-    // Paragraphs (double newline = new paragraph)
+    // Restore inline code
+    inlineCodes.forEach((code, index) => {
+        html = html.replace(
+            `___INLINE_CODE_${index}___`,
+            `<code class="inline-code">${code}</code>`
+        );
+    });
+
+    // Paragraphs
     html = html.split('\n\n').map(para => {
         para = para.trim();
         if (!para) return '';
         
-        // Don't wrap if already wrapped in block elements
         if (para.startsWith('<h') || 
             para.startsWith('<ul') || 
             para.startsWith('<ol') || 
@@ -94,37 +111,84 @@ export function parseMarkdown(text) {
     // Single line breaks
     html = html.replace(/\n/g, '<br>');
 
+    // Restore code blocks with syntax highlighting
+    codeBlocks.forEach((block, index) => {
+        html = html.replace(
+            `___CODE_BLOCK_${index}___`,
+            createCodeBlock(block.language, block.code)
+        );
+    });
+
     return html;
 }
 
 /**
- * Parse code blocks with syntax highlighting
+ * Create code block with syntax highlighting
  */
-function parseCodeBlocks(text) {
-    const codeBlockRegex = /```(\w+)?\n([\s\S]*?)```/g;
+function createCodeBlock(language, code) {
+    const escapedCode = escapeHtml(code);
+    const languageDisplay = getLanguageDisplay(language);
     
-    return text.replace(codeBlockRegex, (match, language, code) => {
-        const lang = language || 'code';
-        const trimmedCode = code.trim();
-        const escapedCode = escapeHtml(trimmedCode);
-        
-        // Add line numbers
-        const lines = escapedCode.split('\n');
-        const numberedCode = lines.map((line, index) => {
-            return `<span class="line-number">${index + 1}</span><span class="line-content">${line || ' '}</span>`;
-        }).join('\n');
-        
-        return `<pre class="code-block"><div class="code-header">
-            <span class="code-language"><span class="lang-icon">{ }</span>${lang}</span>
-            <button class="copy-btn" onclick="copyCode(this)">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+    // Generate unique ID for this code block
+    const blockId = `code-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    
+    return `<div class="code-block-wrapper">
+        <div class="code-header">
+            <div class="code-language-badge">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="16 18 22 12 16 6"></polyline>
+                    <polyline points="8 6 2 12 8 18"></polyline>
+                </svg>
+                <span>${languageDisplay}</span>
+            </div>
+            <button class="copy-btn" onclick="copyCode('${blockId}')" data-copied="false">
+                <svg class="copy-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
                     <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
                 </svg>
+                <svg class="check-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display: none;">
+                    <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
                 <span class="copy-text">Copy</span>
             </button>
-        </div><code class="language-${lang}" data-code="${escapedCode}">${numberedCode}</code></pre>`;
-    });
+        </div>
+        <pre><code id="${blockId}" class="language-${language}" data-raw-code="${escapedCode.replace(/"/g, '&quot;')}">${escapedCode}</code></pre>
+    </div>`;
+}
+
+/**
+ * Get language display name
+ */
+function getLanguageDisplay(lang) {
+    const languages = {
+        'javascript': 'JavaScript',
+        'typescript': 'TypeScript',
+        'python': 'Python',
+        'java': 'Java',
+        'cpp': 'C++',
+        'c': 'C',
+        'csharp': 'C#',
+        'ruby': 'Ruby',
+        'go': 'Go',
+        'rust': 'Rust',
+        'php': 'PHP',
+        'swift': 'Swift',
+        'kotlin': 'Kotlin',
+        'html': 'HTML',
+        'css': 'CSS',
+        'scss': 'SCSS',
+        'json': 'JSON',
+        'xml': 'XML',
+        'yaml': 'YAML',
+        'markdown': 'Markdown',
+        'bash': 'Bash',
+        'shell': 'Shell',
+        'sql': 'SQL',
+        'r': 'R',
+        'dart': 'Dart',
+        'plaintext': 'Text'
+    };
+    return languages[lang] || lang.toUpperCase();
 }
 
 /**
@@ -136,7 +200,7 @@ function parseUnorderedLists(text) {
     let inList = false;
     let listItems = [];
 
-    lines.forEach((line, index) => {
+    lines.forEach((line) => {
         const match = line.match(/^[-*+] (.+)$/);
         
         if (match) {
@@ -144,10 +208,10 @@ function parseUnorderedLists(text) {
                 inList = true;
                 listItems = [];
             }
-            listItems.push(`<li><span class="bullet">●</span><span class="list-content">${match[1]}</span></li>`);
+            listItems.push(`<li>${match[1]}</li>`);
         } else {
             if (inList) {
-                result.push(`<ul class="styled-list">${listItems.join('')}</ul>`);
+                result.push(`<ul>${listItems.join('')}</ul>`);
                 inList = false;
                 listItems = [];
             }
@@ -156,7 +220,7 @@ function parseUnorderedLists(text) {
     });
 
     if (inList) {
-        result.push(`<ul class="styled-list">${listItems.join('')}</ul>`);
+        result.push(`<ul>${listItems.join('')}</ul>`);
     }
 
     return result.join('\n');
@@ -179,10 +243,10 @@ function parseOrderedLists(text) {
                 inList = true;
                 listItems = [];
             }
-            listItems.push(`<li><span class="number">${match[1]}</span><span class="list-content">${match[2]}</span></li>`);
+            listItems.push(`<li>${match[2]}</li>`);
         } else {
             if (inList) {
-                result.push(`<ol class="styled-list numbered">${listItems.join('')}</ol>`);
+                result.push(`<ol>${listItems.join('')}</ol>`);
                 inList = false;
                 listItems = [];
             }
@@ -191,7 +255,7 @@ function parseOrderedLists(text) {
     });
 
     if (inList) {
-        result.push(`<ol class="styled-list numbered">${listItems.join('')}</ol>`);
+        result.push(`<ol>${listItems.join('')}</ol>`);
     }
 
     return result.join('\n');
@@ -208,9 +272,7 @@ function parseTables(text) {
     let isHeaderRow = true;
 
     lines.forEach((line) => {
-        // Check if line is a table row
         if (line.trim().startsWith('|') && line.trim().endsWith('|')) {
-            // Skip separator row
             if (line.match(/^\|[\s-:|]+\|$/)) {
                 return;
             }
@@ -232,7 +294,7 @@ function parseTables(text) {
         } else {
             if (inTable) {
                 tableRows.push('</tbody>');
-                result.push(`<table class="styled-table">${tableRows.join('')}</table>`);
+                result.push(`<table>${tableRows.join('')}</table>`);
                 inTable = false;
                 tableRows = [];
                 isHeaderRow = true;
@@ -243,7 +305,7 @@ function parseTables(text) {
 
     if (inTable) {
         tableRows.push('</tbody>');
-        result.push(`<table class="styled-table">${tableRows.join('')}</table>`);
+        result.push(`<table>${tableRows.join('')}</table>`);
     }
 
     return result.join('\n');
@@ -259,29 +321,38 @@ function escapeHtml(text) {
 }
 
 /**
- * Escape HTML except in code blocks
- */
-function escapeNonCodeHtml(text) {
-    // This is a simplified version - code blocks are already processed
-    return text;
-}
-
-/**
  * Copy code to clipboard (global function)
  */
-window.copyCode = function(button) {
-    const pre = button.closest('pre');
-    const code = pre.querySelector('code');
-    const text = code.getAttribute('data-code');
+window.copyCode = function(blockId) {
+    const codeElement = document.getElementById(blockId);
+    if (!codeElement) return;
     
-    navigator.clipboard.writeText(text).then(() => {
+    const rawCode = codeElement.getAttribute('data-raw-code');
+    const textToCopy = rawCode.replace(/&quot;/g, '"')
+                                .replace(/&lt;/g, '<')
+                                .replace(/&gt;/g, '>')
+                                .replace(/&amp;/g, '&');
+    
+    navigator.clipboard.writeText(textToCopy).then(() => {
+        // Find the button
+        const button = codeElement.closest('.code-block-wrapper').querySelector('.copy-btn');
+        if (!button) return;
+        
+        const copyIcon = button.querySelector('.copy-icon');
+        const checkIcon = button.querySelector('.check-icon');
         const copyText = button.querySelector('.copy-text');
-        const originalText = copyText.textContent;
+        
+        // Show success state
+        copyIcon.style.display = 'none';
+        checkIcon.style.display = 'block';
         copyText.textContent = 'Copied!';
         button.classList.add('copied');
         
+        // Reset after 2 seconds
         setTimeout(() => {
-            copyText.textContent = originalText;
+            copyIcon.style.display = 'block';
+            checkIcon.style.display = 'none';
+            copyText.textContent = 'Copy';
             button.classList.remove('copied');
         }, 2000);
     }).catch(err => {
@@ -289,4 +360,27 @@ window.copyCode = function(button) {
     });
 };
 
-console.log('📦 Professional Markdown Parser loaded');
+/**
+ * Initialize Highlight.js when code blocks are rendered
+ */
+export function initializeSyntaxHighlighting() {
+    if (window.hljs) {
+        document.querySelectorAll('pre code').forEach((block) => {
+            if (!block.dataset.highlighted) {
+                window.hljs.highlightElement(block);
+                block.dataset.highlighted = 'yes';
+            }
+        });
+    }
+}
+
+// Auto-initialize highlighting when available
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+        setTimeout(initializeSyntaxHighlighting, 100);
+    });
+} else {
+    setTimeout(initializeSyntaxHighlighting, 100);
+}
+
+console.log('📦 Ultimate Markdown Parser loaded');
