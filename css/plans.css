@@ -1,0 +1,66 @@
+/* Plan Modal Styles */
+.plans-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: var(--space-lg);
+    padding: var(--space-xl);
+}
+
+.plan-card {
+    background: var(--bg-secondary);
+    border: 2px solid var(--border-primary);
+    border-radius: var(--radius-xl);
+    padding: var(--space-xl);
+    position: relative;
+    transition: all 0.3s ease;
+}
+
+.plan-card.current {
+    border-color: var(--plan-color);
+    box-shadow: 0 0 30px rgba(88, 166, 255, 0.3);
+}
+
+.plan-icon {
+    font-size: 3rem;
+    text-align: center;
+    margin-bottom: var(--space-lg);
+}
+
+.plan-name {
+    font-size: var(--font-size-xl);
+    font-weight: var(--font-weight-bold);
+    color: var(--text-primary);
+    text-align: center;
+    margin-bottom: var(--space-sm);
+}
+
+.plan-model {
+    text-align: center;
+    color: var(--plan-color);
+    font-weight: var(--font-weight-semibold);
+    margin-bottom: var(--space-lg);
+}
+
+.plan-btn {
+    width: 100%;
+    padding: var(--space-md);
+    background: var(--plan-color);
+    color: white;
+    border-radius: var(--radius-lg);
+    font-weight: var(--font-weight-semibold);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-sm);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.plan-btn.upgrade {
+    background: linear-gradient(135deg, #58a6ff 0%, #1f6feb 100%);
+}
+
+.plan-btn:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 30px rgba(88, 166, 255, 0.4);
+}
