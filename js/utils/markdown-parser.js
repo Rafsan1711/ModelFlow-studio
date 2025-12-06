@@ -1,19 +1,19 @@
 /**
  * ============================================
- * ULTIMATE PROFESSIONAL MARKDOWN PARSER
- * With Highlight.js Integration
+ * FIXED PROFESSIONAL MARKDOWN PARSER
+ * Properly renders code blocks and tables
  * ============================================
  */
 
 /**
- * Parse markdown to beautiful HTML
+ * Parse markdown to beautiful HTML (FIXED)
  */
 export function parseMarkdown(text) {
     if (!text) return '';
 
     let html = text;
 
-    // Code blocks FIRST (preserve them)
+    // Code blocks FIRST (preserve them) - FIXED
     const codeBlocks = [];
     html = html.replace(/```(\w+)?\n([\s\S]*?)```/g, (match, language, code) => {
         const placeholder = `___CODE_BLOCK_${codeBlocks.length}___`;
@@ -32,7 +32,7 @@ export function parseMarkdown(text) {
     // Escape HTML
     html = escapeHtml(html);
 
-    // Headings (clean, no icons)
+    // Headings
     html = html.replace(/^### (.+)$/gm, '<h3>$1</h3>');
     html = html.replace(/^## (.+)$/gm, '<h2>$1</h2>');
     html = html.replace(/^# (.+)$/gm, '<h1>$1</h1>');
@@ -61,25 +61,12 @@ export function parseMarkdown(text) {
     // Ordered lists
     html = parseOrderedLists(html);
 
-    // Tables
+    // Tables (FIXED)
     html = parseTables(html);
 
     // Horizontal rules
     html = html.replace(/^---$/gm, '<hr>');
     html = html.replace(/^\*\*\*$/gm, '<hr>');
-
-    // Task lists
-    html = html.replace(/^- \[ \] (.+)$/gm, '<div class="task-item"><input type="checkbox" disabled><span>$1</span></div>');
-    html = html.replace(/^- \[x\] (.+)$/gm, '<div class="task-item"><input type="checkbox" checked disabled><span class="completed">$1</span></div>');
-
-    // Highlights
-    html = html.replace(/==(.+?)==/g, '<mark>$1</mark>');
-
-    // Info boxes
-    html = html.replace(/^\[!NOTE\] (.+)$/gm, '<div class="info-box note"><span class="box-icon">ℹ️</span><span class="box-content">$1</span></div>');
-    html = html.replace(/^\[!TIP\] (.+)$/gm, '<div class="info-box tip"><span class="box-icon">💡</span><span class="box-content">$1</span></div>');
-    html = html.replace(/^\[!WARNING\] (.+)$/gm, '<div class="info-box warning"><span class="box-icon">⚠️</span><span class="box-content">$1</span></div>');
-    html = html.replace(/^\[!IMPORTANT\] (.+)$/gm, '<div class="info-box important"><span class="box-icon">🔥</span><span class="box-content">$1</span></div>');
 
     // Restore inline code
     inlineCodes.forEach((code, index) => {
@@ -101,7 +88,8 @@ export function parseMarkdown(text) {
             para.startsWith('<blockquote') ||
             para.startsWith('<table') ||
             para.startsWith('<hr') ||
-            para.startsWith('<div')) {
+            para.startsWith('<div') ||
+            para.includes('___CODE_BLOCK_')) {
             return para;
         }
         
@@ -111,7 +99,7 @@ export function parseMarkdown(text) {
     // Single line breaks
     html = html.replace(/\n/g, '<br>');
 
-    // Restore code blocks with syntax highlighting
+    // Restore code blocks with syntax highlighting (FIXED)
     codeBlocks.forEach((block, index) => {
         html = html.replace(
             `___CODE_BLOCK_${index}___`,
@@ -123,7 +111,7 @@ export function parseMarkdown(text) {
 }
 
 /**
- * Create code block with syntax highlighting
+ * Create code block with syntax highlighting (FIXED)
  */
 function createCodeBlock(language, code) {
     const escapedCode = escapeHtml(code);
@@ -132,6 +120,7 @@ function createCodeBlock(language, code) {
     // Generate unique ID for this code block
     const blockId = `code-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     
+    // FIXED: Proper code block structure
     return `<div class="code-block-wrapper">
         <div class="code-header">
             <div class="code-language-badge">
@@ -141,7 +130,7 @@ function createCodeBlock(language, code) {
                 </svg>
                 <span>${languageDisplay}</span>
             </div>
-            <button class="copy-btn" onclick="copyCode('${blockId}')" data-copied="false">
+            <button class="copy-btn" onclick="window.copyCode('${blockId}')" data-copied="false">
                 <svg class="copy-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
                     <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
@@ -184,8 +173,6 @@ function getLanguageDisplay(lang) {
         'bash': 'Bash',
         'shell': 'Shell',
         'sql': 'SQL',
-        'r': 'R',
-        'dart': 'Dart',
         'plaintext': 'Text'
     };
     return languages[lang] || lang.toUpperCase();
@@ -262,7 +249,7 @@ function parseOrderedLists(text) {
 }
 
 /**
- * Parse tables
+ * Parse tables (FIXED)
  */
 function parseTables(text) {
     const lines = text.split('\n');
@@ -271,8 +258,10 @@ function parseTables(text) {
     let tableRows = [];
     let isHeaderRow = true;
 
-    lines.forEach((line) => {
+    lines.forEach((line, index) => {
+        // Check if line is a table row
         if (line.trim().startsWith('|') && line.trim().endsWith('|')) {
+            // Skip separator line
             if (line.match(/^\|[\s-:|]+\|$/)) {
                 return;
             }
@@ -283,7 +272,9 @@ function parseTables(text) {
                 isHeaderRow = true;
             }
 
-            const cells = line.split('|').filter(cell => cell.trim()).map(cell => cell.trim());
+            const cells = line.split('|')
+                .filter(cell => cell.trim())
+                .map(cell => cell.trim());
             
             if (isHeaderRow) {
                 tableRows.push(`<thead><tr>${cells.map(cell => `<th>${cell}</th>`).join('')}</tr></thead><tbody>`);
@@ -294,7 +285,7 @@ function parseTables(text) {
         } else {
             if (inTable) {
                 tableRows.push('</tbody>');
-                result.push(`<table>${tableRows.join('')}</table>`);
+                result.push(`<table class="markdown-table">${tableRows.join('')}</table>`);
                 inTable = false;
                 tableRows = [];
                 isHeaderRow = true;
@@ -305,7 +296,7 @@ function parseTables(text) {
 
     if (inTable) {
         tableRows.push('</tbody>');
-        result.push(`<table>${tableRows.join('')}</table>`);
+        result.push(`<table class="markdown-table">${tableRows.join('')}</table>`);
     }
 
     return result.join('\n');
@@ -328,13 +319,13 @@ window.copyCode = function(blockId) {
     if (!codeElement) return;
     
     const rawCode = codeElement.getAttribute('data-raw-code');
-    const textToCopy = rawCode.replace(/&quot;/g, '"')
-                                .replace(/&lt;/g, '<')
-                                .replace(/&gt;/g, '>')
-                                .replace(/&amp;/g, '&');
+    const textToCopy = rawCode
+        .replace(/&quot;/g, '"')
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>')
+        .replace(/&amp;/g, '&');
     
     navigator.clipboard.writeText(textToCopy).then(() => {
-        // Find the button
         const button = codeElement.closest('.code-block-wrapper').querySelector('.copy-btn');
         if (!button) return;
         
@@ -342,13 +333,11 @@ window.copyCode = function(blockId) {
         const checkIcon = button.querySelector('.check-icon');
         const copyText = button.querySelector('.copy-text');
         
-        // Show success state
         copyIcon.style.display = 'none';
         checkIcon.style.display = 'block';
         copyText.textContent = 'Copied!';
         button.classList.add('copied');
         
-        // Reset after 2 seconds
         setTimeout(() => {
             copyIcon.style.display = 'block';
             checkIcon.style.display = 'none';
@@ -374,7 +363,7 @@ export function initializeSyntaxHighlighting() {
     }
 }
 
-// Auto-initialize highlighting when available
+// Auto-initialize highlighting
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {
         setTimeout(initializeSyntaxHighlighting, 100);
@@ -383,4 +372,4 @@ if (document.readyState === 'loading') {
     setTimeout(initializeSyntaxHighlighting, 100);
 }
 
-console.log('📦 Ultimate Markdown Parser loaded');
+console.log('📦 Fixed Markdown Parser loaded');
