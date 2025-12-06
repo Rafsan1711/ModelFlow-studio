@@ -1,30 +1,32 @@
 /**
  * ============================================
- * ULTIMATE PROFESSIONAL MARKDOWN PARSER
- * With Highlight.js Integration
+ * MARKDOWN PARSER - FIXED CODE BLOCKS
  * ============================================
  */
 
 /**
- * Parse markdown to beautiful HTML
+ * Parse markdown to HTML - FIXED
  */
 export function parseMarkdown(text) {
     if (!text) return '';
 
     let html = text;
 
-    // Code blocks FIRST (preserve them)
+    // Code blocks FIRST (with proper preservation)
     const codeBlocks = [];
     html = html.replace(/```(\w+)?\n([\s\S]*?)```/g, (match, language, code) => {
-        const placeholder = `___CODE_BLOCK_${codeBlocks.length}___`;
-        codeBlocks.push({ language: language || 'plaintext', code: code.trim() });
+        const placeholder = `___CODEBLOCK${codeBlocks.length}___`;
+        codeBlocks.push({ 
+            language: language || 'plaintext', 
+            code: code.trim() 
+        });
         return placeholder;
     });
 
     // Inline code (preserve)
     const inlineCodes = [];
     html = html.replace(/`([^`]+)`/g, (match, code) => {
-        const placeholder = `___INLINE_CODE_${inlineCodes.length}___`;
+        const placeholder = `___INLINECODE${inlineCodes.length}___`;
         inlineCodes.push(code);
         return placeholder;
     });
@@ -32,12 +34,12 @@ export function parseMarkdown(text) {
     // Escape HTML
     html = escapeHtml(html);
 
-    // Headings (clean, no icons)
+    // Headings
     html = html.replace(/^### (.+)$/gm, '<h3>$1</h3>');
     html = html.replace(/^## (.+)$/gm, '<h2>$1</h2>');
     html = html.replace(/^# (.+)$/gm, '<h1>$1</h1>');
 
-    // Bold (must come before italic)
+    // Bold
     html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
     html = html.replace(/__(.+?)__/g, '<strong>$1</strong>');
 
@@ -66,25 +68,11 @@ export function parseMarkdown(text) {
 
     // Horizontal rules
     html = html.replace(/^---$/gm, '<hr>');
-    html = html.replace(/^\*\*\*$/gm, '<hr>');
-
-    // Task lists
-    html = html.replace(/^- \[ \] (.+)$/gm, '<div class="task-item"><input type="checkbox" disabled><span>$1</span></div>');
-    html = html.replace(/^- \[x\] (.+)$/gm, '<div class="task-item"><input type="checkbox" checked disabled><span class="completed">$1</span></div>');
-
-    // Highlights
-    html = html.replace(/==(.+?)==/g, '<mark>$1</mark>');
-
-    // Info boxes
-    html = html.replace(/^\[!NOTE\] (.+)$/gm, '<div class="info-box note"><span class="box-icon">ℹ️</span><span class="box-content">$1</span></div>');
-    html = html.replace(/^\[!TIP\] (.+)$/gm, '<div class="info-box tip"><span class="box-icon">💡</span><span class="box-content">$1</span></div>');
-    html = html.replace(/^\[!WARNING\] (.+)$/gm, '<div class="info-box warning"><span class="box-icon">⚠️</span><span class="box-content">$1</span></div>');
-    html = html.replace(/^\[!IMPORTANT\] (.+)$/gm, '<div class="info-box important"><span class="box-icon">🔥</span><span class="box-content">$1</span></div>');
 
     // Restore inline code
     inlineCodes.forEach((code, index) => {
         html = html.replace(
-            `___INLINE_CODE_${index}___`,
+            `___INLINECODE${index}___`,
             `<code class="inline-code">${code}</code>`
         );
     });
@@ -97,11 +85,10 @@ export function parseMarkdown(text) {
         if (para.startsWith('<h') || 
             para.startsWith('<ul') || 
             para.startsWith('<ol') || 
-            para.startsWith('<pre') || 
             para.startsWith('<blockquote') ||
             para.startsWith('<table') ||
             para.startsWith('<hr') ||
-            para.startsWith('<div')) {
+            para.startsWith('___CODEBLOCK')) {
             return para;
         }
         
@@ -111,10 +98,10 @@ export function parseMarkdown(text) {
     // Single line breaks
     html = html.replace(/\n/g, '<br>');
 
-    // Restore code blocks with syntax highlighting
+    // Restore code blocks - FIXED
     codeBlocks.forEach((block, index) => {
         html = html.replace(
-            `___CODE_BLOCK_${index}___`,
+            `___CODEBLOCK${index}___`,
             createCodeBlock(block.language, block.code)
         );
     });
@@ -123,14 +110,17 @@ export function parseMarkdown(text) {
 }
 
 /**
- * Create code block with syntax highlighting
+ * Create code block - FIXED
  */
 function createCodeBlock(language, code) {
-    const escapedCode = escapeHtml(code);
+    const blockId = `code-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     const languageDisplay = getLanguageDisplay(language);
     
-    // Generate unique ID for this code block
-    const blockId = `code-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    // Add line numbers
+    const lines = code.split('\n');
+    const numberedCode = lines.map((line, i) => 
+        `<span class="code-line"><span class="line-number">${i + 1}</span><span class="line-content">${escapeHtml(line)}</span></span>`
+    ).join('\n');
     
     return `<div class="code-block-wrapper">
         <div class="code-header">
@@ -141,7 +131,7 @@ function createCodeBlock(language, code) {
                 </svg>
                 <span>${languageDisplay}</span>
             </div>
-            <button class="copy-btn" onclick="copyCode('${blockId}')" data-copied="false">
+            <button class="copy-btn" onclick="window.copyCodeBlock('${blockId}')" data-copied="false">
                 <svg class="copy-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
                     <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
@@ -152,9 +142,42 @@ function createCodeBlock(language, code) {
                 <span class="copy-text">Copy</span>
             </button>
         </div>
-        <pre><code id="${blockId}" class="language-${language}" data-raw-code="${escapedCode.replace(/"/g, '&quot;')}">${escapedCode}</code></pre>
+        <pre><code id="${blockId}" class="language-${language}" data-raw-code="${btoa(code)}">${numberedCode}</code></pre>
     </div>`;
 }
+
+/**
+ * Copy code block - GLOBAL FUNCTION
+ */
+window.copyCodeBlock = function(blockId) {
+    const codeElement = document.getElementById(blockId);
+    if (!codeElement) return;
+    
+    const rawCode = atob(codeElement.getAttribute('data-raw-code'));
+    
+    navigator.clipboard.writeText(rawCode).then(() => {
+        const button = codeElement.closest('.code-block-wrapper').querySelector('.copy-btn');
+        if (!button) return;
+        
+        const copyIcon = button.querySelector('.copy-icon');
+        const checkIcon = button.querySelector('.check-icon');
+        const copyText = button.querySelector('.copy-text');
+        
+        copyIcon.style.display = 'none';
+        checkIcon.style.display = 'block';
+        copyText.textContent = 'Copied!';
+        button.classList.add('copied');
+        
+        setTimeout(() => {
+            copyIcon.style.display = 'block';
+            checkIcon.style.display = 'none';
+            copyText.textContent = 'Copy';
+            button.classList.remove('copied');
+        }, 2000);
+    }).catch(err => {
+        console.error('Failed to copy:', err);
+    });
+};
 
 /**
  * Get language display name
@@ -172,20 +195,11 @@ function getLanguageDisplay(lang) {
         'go': 'Go',
         'rust': 'Rust',
         'php': 'PHP',
-        'swift': 'Swift',
-        'kotlin': 'Kotlin',
         'html': 'HTML',
         'css': 'CSS',
-        'scss': 'SCSS',
         'json': 'JSON',
-        'xml': 'XML',
-        'yaml': 'YAML',
-        'markdown': 'Markdown',
         'bash': 'Bash',
-        'shell': 'Shell',
         'sql': 'SQL',
-        'r': 'R',
-        'dart': 'Dart',
         'plaintext': 'Text'
     };
     return languages[lang] || lang.toUpperCase();
@@ -320,67 +334,4 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
-/**
- * Copy code to clipboard (global function)
- */
-window.copyCode = function(blockId) {
-    const codeElement = document.getElementById(blockId);
-    if (!codeElement) return;
-    
-    const rawCode = codeElement.getAttribute('data-raw-code');
-    const textToCopy = rawCode.replace(/&quot;/g, '"')
-                                .replace(/&lt;/g, '<')
-                                .replace(/&gt;/g, '>')
-                                .replace(/&amp;/g, '&');
-    
-    navigator.clipboard.writeText(textToCopy).then(() => {
-        // Find the button
-        const button = codeElement.closest('.code-block-wrapper').querySelector('.copy-btn');
-        if (!button) return;
-        
-        const copyIcon = button.querySelector('.copy-icon');
-        const checkIcon = button.querySelector('.check-icon');
-        const copyText = button.querySelector('.copy-text');
-        
-        // Show success state
-        copyIcon.style.display = 'none';
-        checkIcon.style.display = 'block';
-        copyText.textContent = 'Copied!';
-        button.classList.add('copied');
-        
-        // Reset after 2 seconds
-        setTimeout(() => {
-            copyIcon.style.display = 'block';
-            checkIcon.style.display = 'none';
-            copyText.textContent = 'Copy';
-            button.classList.remove('copied');
-        }, 2000);
-    }).catch(err => {
-        console.error('Failed to copy:', err);
-    });
-};
-
-/**
- * Initialize Highlight.js when code blocks are rendered
- */
-export function initializeSyntaxHighlighting() {
-    if (window.hljs) {
-        document.querySelectorAll('pre code').forEach((block) => {
-            if (!block.dataset.highlighted) {
-                window.hljs.highlightElement(block);
-                block.dataset.highlighted = 'yes';
-            }
-        });
-    }
-}
-
-// Auto-initialize highlighting when available
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => {
-        setTimeout(initializeSyntaxHighlighting, 100);
-    });
-} else {
-    setTimeout(initializeSyntaxHighlighting, 100);
-}
-
-console.log('📦 Ultimate Markdown Parser loaded');
+console.log('📦 Markdown Parser (FIXED) loaded');
