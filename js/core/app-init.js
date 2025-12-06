@@ -1,7 +1,7 @@
 /**
  * ============================================
- * ENHANCED APP INITIALIZATION
- * With beautiful loading animations
+ * APP INITIALIZATION - FIXED
+ * No more redirect glitches!
  * ============================================
  */
 
@@ -11,6 +11,8 @@ import { initChatUI } from '../chat/chat-ui.js';
 import { initSidebar } from '../ui/sidebar-manager.js';
 import { initRouter } from './router.js';
 import { StateManager } from './state-manager.js';
+import { initFileUpload } from '../utils/file-handler.js';
+import { updateUsageDisplay } from '../ui/usage-display.js';
 
 // Global state
 window.NexusAI = {
@@ -19,35 +21,45 @@ window.NexusAI = {
 };
 
 /**
- * Initialize application
+ * Initialize application - FIXED
  */
 async function initApp() {
     console.log('🚀 ModelFlow Studio - Initializing...');
 
     try {
-        // Show loader animation
         showLoader();
 
-        // Wait for auth state
-        const user = await checkAuth();
+        // Wait for auth state - FIXED
+        const user = await new Promise((resolve) => {
+            const unsubscribe = auth.onAuthStateChanged((user) => {
+                unsubscribe();
+                resolve(user);
+            });
+        });
 
         if (user) {
             console.log('✅ User authenticated:', user.email);
+            window.NexusAI.state.setUser(user);
+            
+            // Initialize all modules
             await initializeModules();
+            
+            // Show main app - FIXED: No refresh needed
             showMainApp();
+            
+            // Update usage display
+            await updateUsageDisplay();
         } else {
             console.log('ℹ️ No user - showing auth screen');
             showAuthScreen();
             initAuthUI();
         }
 
-        // Hide loader with animation
         await hideLoader();
         
         window.NexusAI.initialized = true;
         console.log('✅ ModelFlow Studio initialized successfully');
 
-        // Initialize libraries
         initializeLibraries();
 
     } catch (error) {
@@ -58,18 +70,6 @@ async function initApp() {
 }
 
 /**
- * Check authentication state
- */
-function checkAuth() {
-    return new Promise((resolve) => {
-        const unsubscribe = firebase.auth().onAuthStateChanged((user) => {
-            unsubscribe();
-            resolve(user);
-        });
-    });
-}
-
-/**
  * Initialize all modules
  */
 async function initializeModules() {
@@ -77,6 +77,7 @@ async function initializeModules() {
         initRouter();
         initSidebar();
         await initChatUI();
+        initFileUpload();
         
         console.log('✅ All modules initialized');
     } catch (error) {
@@ -85,7 +86,7 @@ async function initializeModules() {
 }
 
 /**
- * Show main app with animation
+ * Show main app - FIXED
  */
 function showMainApp() {
     const authScreen = document.getElementById('auth-screen');
@@ -93,16 +94,19 @@ function showMainApp() {
     
     authScreen.style.display = 'none';
     mainApp.style.display = 'flex';
-    mainApp.style.opacity = '0';
     
-    setTimeout(() => {
+    // Smooth fade in - FIXED
+    requestAnimationFrame(() => {
+        mainApp.style.opacity = '0';
         mainApp.style.transition = 'opacity 0.5s ease';
-        mainApp.style.opacity = '1';
-    }, 50);
+        requestAnimationFrame(() => {
+            mainApp.style.opacity = '1';
+        });
+    });
 }
 
 /**
- * Show auth screen with animation
+ * Show auth screen
  */
 function showAuthScreen() {
     const mainApp = document.getElementById('main-app');
@@ -110,16 +114,18 @@ function showAuthScreen() {
     
     mainApp.style.display = 'none';
     authScreen.style.display = 'flex';
-    authScreen.style.opacity = '0';
     
-    setTimeout(() => {
+    requestAnimationFrame(() => {
+        authScreen.style.opacity = '0';
         authScreen.style.transition = 'opacity 0.5s ease';
-        authScreen.style.opacity = '1';
-    }, 50);
+        requestAnimationFrame(() => {
+            authScreen.style.opacity = '1';
+        });
+    });
 }
 
 /**
- * Show loader with progress animation
+ * Show loader
  */
 function showLoader() {
     const loader = document.getElementById('loader');
@@ -127,7 +133,6 @@ function showLoader() {
         loader.style.display = 'flex';
         loader.style.opacity = '1';
         
-        // Animate progress bar
         const progressBar = loader.querySelector('.loader-progress-bar');
         if (progressBar) {
             progressBar.style.width = '0%';
@@ -140,20 +145,18 @@ function showLoader() {
 }
 
 /**
- * Hide loader with smooth animation
+ * Hide loader
  */
 function hideLoader() {
     return new Promise((resolve) => {
         const loader = document.getElementById('loader');
         if (loader) {
-            // Complete progress
             const progressBar = loader.querySelector('.loader-progress-bar');
             if (progressBar) {
                 progressBar.style.transition = 'width 0.3s ease';
                 progressBar.style.width = '100%';
             }
             
-            // Fade out
             setTimeout(() => {
                 loader.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
                 loader.style.opacity = '0';
@@ -171,7 +174,7 @@ function hideLoader() {
 }
 
 /**
- * Show error message with animation
+ * Show error
  */
 function showError(message) {
     const errorDiv = document.createElement('div');
@@ -201,17 +204,17 @@ function showError(message) {
 }
 
 /**
- * Handle auth state changes (for logout/login)
+ * Setup auth listener - FIXED
  */
 export function setupAuthListener() {
-    firebase.auth().onAuthStateChanged((user) => {
-        if (user) {
-            if (!window.NexusAI.initialized) {
-                showMainApp();
-                initializeModules();
-                window.NexusAI.initialized = true;
-            }
-        } else {
+    auth.onAuthStateChanged(async (user) => {
+        if (user && !window.NexusAI.initialized) {
+            window.NexusAI.state.setUser(user);
+            await initializeModules();
+            showMainApp();
+            await updateUsageDisplay();
+            window.NexusAI.initialized = true;
+        } else if (!user && window.NexusAI.initialized) {
             showAuthScreen();
             initAuthUI();
             window.NexusAI.initialized = false;
@@ -223,7 +226,7 @@ export function setupAuthListener() {
  * Initialize external libraries
  */
 function initializeLibraries() {
-    // Initialize AOS (Animate On Scroll)
+    // AOS
     if (window.AOS) {
         window.AOS.init({
             duration: 800,
@@ -233,7 +236,7 @@ function initializeLibraries() {
         });
     }
 
-    // Initialize Tippy.js for tooltips
+    // Tippy.js
     if (window.tippy) {
         window.tippy('[data-tippy-content]', {
             placement: 'bottom',
@@ -244,151 +247,22 @@ function initializeLibraries() {
         });
     }
 
-    // Add custom Tippy theme
-    const style = document.createElement('style');
-    style.textContent = `
-        .tippy-box[data-theme~='custom'] {
-            background: rgba(24, 24, 27, 0.95);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(37, 99, 235, 0.3);
-            color: #fafafa;
-            font-size: 14px;
-            font-weight: 500;
-            padding: 8px 12px;
-            border-radius: 8px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
-        }
-        .tippy-box[data-theme~='custom'][data-placement^='top'] > .tippy-arrow::before {
-            border-top-color: rgba(24, 24, 27, 0.95);
-        }
-        .tippy-box[data-theme~='custom'][data-placement^='bottom'] > .tippy-arrow::before {
-            border-bottom-color: rgba(24, 24, 27, 0.95);
-        }
-    `;
-    document.head.appendChild(style);
-
-    // Initialize GSAP ScrollTrigger if available
-    if (window.gsap && window.ScrollTrigger) {
-        window.gsap.registerPlugin(window.ScrollTrigger);
-    }
-
-    // Add global keyboard shortcuts
+    // Global keyboard shortcuts
     document.addEventListener('keydown', (e) => {
-        // Ctrl/Cmd + K to focus search/input
         if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
             e.preventDefault();
             const input = document.getElementById('message-input');
             if (input) input.focus();
         }
         
-        // Escape to close modals
         if (e.key === 'Escape') {
             const modal = document.querySelector('.modal.active');
-            if (modal) {
-                modal.classList.remove('active');
-            }
-        }
-    });
-
-    // Add visibility change handler for better performance
-    document.addEventListener('visibilitychange', () => {
-        if (document.hidden) {
-            // Pause animations when tab is hidden
-            document.body.style.animationPlayState = 'paused';
-        } else {
-            // Resume animations
-            document.body.style.animationPlayState = 'running';
-        }
-    });
-
-    // Add online/offline indicators
-    window.addEventListener('online', () => {
-        const statusIndicator = document.querySelector('.status-indicator');
-        if (statusIndicator) {
-            statusIndicator.classList.add('online');
-            showSuccessNotification('Connection restored');
-        }
-    });
-
-    window.addEventListener('offline', () => {
-        const statusIndicator = document.querySelector('.status-indicator');
-        if (statusIndicator) {
-            statusIndicator.classList.remove('online');
-            showWarningNotification('No internet connection');
+            if (modal) modal.classList.remove('active');
         }
     });
 
     console.log('✅ External libraries initialized');
 }
-
-/**
- * Show success notification
- */
-function showSuccessNotification(message) {
-    createNotification(message, 'success');
-}
-
-/**
- * Show warning notification
- */
-function showWarningNotification(message) {
-    createNotification(message, 'warning');
-}
-
-/**
- * Create notification
- */
-function createNotification(message, type) {
-    const colors = {
-        success: '#10b981',
-        warning: '#f59e0b',
-        error: '#ef4444',
-        info: '#3b82f6'
-    };
-
-    const notification = document.createElement('div');
-    notification.style.cssText = `
-        position: fixed;
-        bottom: 24px;
-        right: 24px;
-        background: ${colors[type] || colors.info};
-        color: white;
-        padding: 16px 24px;
-        border-radius: 12px;
-        font-size: 14px;
-        font-weight: 600;
-        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
-        z-index: 10000;
-        animation: slideInRight 0.3s ease;
-        max-width: 300px;
-    `;
-    notification.textContent = message;
-    
-    document.body.appendChild(notification);
-    
-    setTimeout(() => {
-        notification.style.transition = 'all 0.3s ease';
-        notification.style.transform = 'translateX(400px)';
-        notification.style.opacity = '0';
-        setTimeout(() => notification.remove(), 300);
-    }, 3000);
-}
-
-// Add slideInRight animation
-const style = document.createElement('style');
-style.textContent = `
-    @keyframes slideInRight {
-        from {
-            transform: translateX(400px);
-            opacity: 0;
-        }
-        to {
-            transform: translateX(0);
-            opacity: 1;
-        }
-    }
-`;
-document.head.appendChild(style);
 
 // Initialize on DOM ready
 if (document.readyState === 'loading') {
@@ -397,7 +271,6 @@ if (document.readyState === 'loading') {
     initApp();
 }
 
-// Setup global auth listener
 setupAuthListener();
 
-console.log('📦 Enhanced App Init module loaded');
+console.log('📦 App Init (FIXED) loaded');
