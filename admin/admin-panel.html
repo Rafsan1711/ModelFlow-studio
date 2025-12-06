@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel - ModelFlow Studio</title>
+    
+    <link rel="stylesheet" href="../css/variables.css">
+    <link rel="stylesheet" href="../css/reset.css">
+    <link rel="stylesheet" href="../css/admin.css">
+    
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
+</head>
+<body>
+    <!-- Auth Check -->
+    <div id="auth-check" class="loader">
+        <div class="loader-content">
+            <div class="loader-spinner"></div>
+            <p>Checking access...</p>
+        </div>
+    </div>
+
+    <!-- Access Denied -->
+    <div id="access-denied" class="access-denied" style="display: none;">
+        <div class="denied-content">
+            <svg width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/>
+                <path d="M4.93 4.93l14.14 14.14"/>
+            </svg>
+            <h1>Access Denied</h1>
+            <p>Only the owner can access this panel.</p>
+            <button onclick="window.location.href='../index.html'" class="back-btn">Go Back</button>
+        </div>
+    </div>
+
+    <!-- Admin Panel -->
+    <div id="admin-panel" class="admin-panel" style="display: none;">
+        <!-- Header -->
+        <header class="admin-header">
+            <div class="header-left">
+                <h1>🎯 ModelFlow Studio Admin</h1>
+                <span class="owner-badge">Owner Panel</span>
+            </div>
+            <div class="header-right">
+                <button class="header-btn" onclick="window.location.href='../index.html'">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
+                    </svg>
+                    Back to App
+                </button>
+                <button class="header-btn" onclick="refreshData()">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0118.8-4.3M22 12.5a10 10 0 01-18.8 4.2"/>
+                    </svg>
+                    Refresh
+                </button>
+            </div>
+        </header>
+
+        <!-- Stats Overview -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon" style="background: rgba(88, 166, 255, 0.2);">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#58a6ff" stroke-width="2">
+                        <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/>
+                        <circle cx="9" cy="7" r="4"/>
+                        <path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/>
+                    </svg>
+                </div>
+                <div class="stat-content">
+                    <div class="stat-label">Total Users</div>
+                    <div class="stat-value" id="total-users">0</div>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-icon" style="background: rgba(255, 215, 0, 0.2);">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ffd700" stroke-width="2">
+                        <path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/>
+                    </svg>
+                </div>
+                <div class="stat-content">
+                    <div class="stat-label">Pending Requests</div>
+                    <div class="stat-value" id="pending-requests">0</div>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-icon" style="background: rgba(16, 185, 129, 0.2);">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2">
+                        <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+                    </svg>
+                </div>
+                <div class="stat-content">
+                    <div class="stat-label">Active Today</div>
+                    <div class="stat-value" id="active-today">0</div>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-icon" style="background: rgba(239, 68, 68, 0.2);">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2">
+                        <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>
+                    </svg>
+                </div>
+                <div class="stat-content">
+                    <div class="stat-label">Total Chats</div>
+                    <div class="stat-value" id="total-chats">0</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="admin-content">
+            <!-- Tabs -->
+            <div class="admin-tabs">
+                <button class="admin-tab active" data-tab="requests">
+                    Plan Requests
+                    <span class="tab-badge" id="requests-badge">0</span>
+                </button>
+                <button class="admin-tab" data-tab="users">
+                    All Users
+                </button>
+                <button class="admin-tab" data-tab="analytics">
+                    Analytics
+                </button>
+            </div>
+
+            <!-- Tab Content: Requests -->
+            <div id="tab-requests" class="tab-content active">
+                <div class="table-header">
+                    <h2>Plan Upgrade Requests</h2>
+                    <div class="table-filters">
+                        <select id="status-filter" onchange="filterRequests()">
+                            <option value="all">All Status</option>
+                            <option value="pending" selected>Pending</option>
+                            <option value="approved">Approved</option>
+                            <option value="denied">Denied</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="table-container">
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>User</th>
+                                <th>Current Plan</th>
+                                <th>Requested Plan</th>
+                                <th>Reason</th>
+                                <th>Date</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="requests-table-body">
+                            <tr><td colspan="7" class="loading">Loading...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Tab Content: Users -->
+            <div id="tab-users" class="tab-content">
+                <div class="table-header">
+                    <h2>All Users</h2>
+                    <div class="table-filters">
+                        <input type="text" id="user-search" placeholder="Search users..." onkeyup="searchUsers()">
+                        <select id="plan-filter" onchange="filterUsers()">
+                            <option value="all">All Plans</option>
+                            <option value="free">Free</option>
+                            <option value="pro">Pro</option>
+                            <option value="max">Max</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="table-container">
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>Email</th>
+                                <th>Plan</th>
+                                <th>Usage Today</th>
+                                <th>Joined</th>
+                                <th>Last Active</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="users-table-body">
+                            <tr><td colspan="6" class="loading">Loading...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Tab Content: Analytics -->
+            <div id="tab-analytics" class="tab-content">
+                <h2>Analytics Dashboard</h2>
+                <div class="analytics-grid">
+                    <div class="analytics-card">
+                        <h3>Plan Distribution</h3>
+                        <div id="plan-distribution" class="chart-placeholder">
+                            <!-- Chart will be rendered here -->
+                        </div>
+                    </div>
+                    
+                    <div class="analytics-card">
+                        <h3>Daily Active Users</h3>
+                        <div id="daily-active" class="chart-placeholder">
+                            <!-- Chart will be rendered here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script type="module" src="js/admin-auth.js"></script>
+    <script type="module" src="js/admin-main.js"></script>
+</body>
+</html>
