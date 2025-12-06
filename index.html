@@ -20,6 +20,7 @@
     <!-- Custom CSS Files -->
     <link rel="stylesheet" href="css/variables.css">
     <link rel="stylesheet" href="css/reset.css">
+    <link rel="stylesheet" href="css/admin.css">
     <link rel="stylesheet" href="css/layout.css">
     <link rel="stylesheet" href="css/auth.css">
     <link rel="stylesheet" href="css/chat.css">
@@ -68,6 +69,200 @@
     <!-- Animated Background -->
     <div id="animated-bg" class="animated-background"></div>
 
+
+
+
+    <!-- Unauthorized Screen -->
+    <div id="unauthorized-screen" class="unauthorized-screen" style="display: none;">
+        <div class="unauthorized-content">
+            <div class="unauthorized-icon">🚫</div>
+            <h1>Access Denied</h1>
+            <p>You don't have permission to access this page.</p>
+            <a href="/" class="btn-primary">Go to Home</a>
+        </div>
+    </div>
+
+    <!-- Admin Panel -->
+    <div id="admin-panel" class="admin-panel" style="display: none;">
+        <!-- Header -->
+        <header class="admin-header">
+            <div class="admin-logo">
+                <div class="logo-icon">👑</div>
+                <div>
+                    <h1>Admin Panel</h1>
+                    <p>ModelFlow Studio</p>
+                </div>
+            </div>
+            <div class="admin-user">
+                <span id="admin-email">Loading...</span>
+                <button id="admin-logout-btn" class="btn-logout">Logout</button>
+            </div>
+        </header>
+
+        <!-- Stats Dashboard -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon" style="background: #58a6ff;">📊</div>
+                <div class="stat-content">
+                    <h3 id="total-users">0</h3>
+                    <p>Total Users</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon" style="background: #f59e0b;">⏳</div>
+                <div class="stat-content">
+                    <h3 id="pending-requests">0</h3>
+                    <p>Pending Requests</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon" style="background: #10b981;">✅</div>
+                <div class="stat-content">
+                    <h3 id="approved-requests">0</h3>
+                    <p>Approved</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon" style="background: #ef4444;">❌</div>
+                <div class="stat-content">
+                    <h3 id="denied-requests">0</h3>
+                    <p>Denied</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Permission Requests Table -->
+        <div class="admin-section">
+            <div class="section-header">
+                <h2>Permission Requests</h2>
+                <div class="filter-tabs">
+                    <button class="filter-tab active" data-filter="all">All</button>
+                    <button class="filter-tab" data-filter="pending">Pending</button>
+                    <button class="filter-tab" data-filter="approved">Approved</button>
+                    <button class="filter-tab" data-filter="denied">Denied</button>
+                </div>
+            </div>
+            
+            <div class="table-container">
+                <table class="requests-table">
+                    <thead>
+                        <tr>
+                            <th>User Email</th>
+                            <th>Current Plan</th>
+                            <th>Requested Plan</th>
+                            <th>Reason</th>
+                            <th>Status</th>
+                            <th>Date</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="requests-table-body">
+                        <tr>
+                            <td colspan="7" style="text-align: center; padding: 40px;">
+                                Loading requests...
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Users Management -->
+        <div class="admin-section">
+            <div class="section-header">
+                <h2>User Management</h2>
+                <input type="text" id="user-search" class="search-input" placeholder="Search users by email...">
+            </div>
+            
+            <div class="table-container">
+                <table class="users-table">
+                    <thead>
+                        <tr>
+                            <th>Email</th>
+                            <th>Current Plan</th>
+                            <th>Chats Today</th>
+                            <th>Joined</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="users-table-body">
+                        <tr>
+                            <td colspan="5" style="text-align: center; padding: 40px;">
+                                Loading users...
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Approval Modal -->
+    <div id="approval-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Approve Request</h3>
+                <button class="close-modal-btn" onclick="closeApprovalModal()">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>User Email</label>
+                    <input type="text" id="approve-user-email" readonly>
+                </div>
+                <div class="form-group">
+                    <label>Plan to Approve</label>
+                    <input type="text" id="approve-plan" readonly>
+                </div>
+                <div class="form-group">
+                    <label>Custom Responses Per Chat (Optional)</label>
+                    <input type="number" id="custom-responses" placeholder="Leave empty for default">
+                </div>
+                <div class="form-group">
+                    <label>Custom Chats Per Day (Optional)</label>
+                    <input type="number" id="custom-chats" placeholder="Leave empty for default">
+                </div>
+                <div class="modal-actions">
+                    <button class="btn-cancel" onclick="closeApprovalModal()">Cancel</button>
+                    <button class="btn-approve" onclick="confirmApproval()">Approve</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Deny Modal -->
+    <div id="deny-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Deny Request</h3>
+                <button class="close-modal-btn" onclick="closeDenyModal()">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>User Email</label>
+                    <input type="text" id="deny-user-email" readonly>
+                </div>
+                <div class="form-group">
+                    <label>Reason for Denial</label>
+                    <textarea id="deny-reason" rows="4" placeholder="Explain why the request is denied..."></textarea>
+                </div>
+                <div class="modal-actions">
+                    <button class="btn-cancel" onclick="closeDenyModal()">Cancel</button>
+                    <button class="btn-deny" onclick="confirmDeny()">Deny Request</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+
+
+
+
+
+
+
+
+    
     <!-- Global Loader with Animation -->
     <div id="loader" class="loader">
         <div class="loader-content">
@@ -445,5 +640,6 @@
     <script type="module" src="js/utils/dom-helpers.js"></script>
     <script type="module" src="js/utils/date-formatter.js"></script>
     <script type="module" src="js/utils/markdown-parser.js"></script>
+    <script type="module" src="js/admin/admin-panel.js"></script>
 </body>
     </html>
