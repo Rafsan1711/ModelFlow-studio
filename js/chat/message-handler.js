@@ -1,7 +1,7 @@
 /**
  * ============================================
- * MESSAGE HANDLER
- * Send and receive messages
+ * MESSAGE HANDLER (WITH USAGE LIMITS)
+ * Send and receive messages with plan limits
  * ============================================
  */
 
@@ -16,6 +16,9 @@ import {
 } from './chat-ui.js';
 import { createChat, saveChat, generateChatTitle } from './chat-manager.js';
 import { navigateToChat } from '../core/router.js';
+import { canSendMessage, incrementResponseCount } from '../plans/usage-tracker.js';
+import { getUserPlan } from '../plans/plans-config.js';
+import { showUpgradeModal, showNewChatModal } from '../ui/modals.js';
 
 let isSending = false;
 
@@ -28,6 +31,25 @@ export async function handleSendMessage() {
     const message = getInputValue();
     if (!message) return;
 
+    // Get user plan
+    const userPlanData = window.NexusAI.state.get('userPlanData');
+    const userEmail = window.NexusAI.state.get('user')?.email;
+    const userPlan = getUserPlan(userEmail, userPlanData);
+
+    // Check if user can send message
+    const canSend = await canSendMessage(userPlan);
+    
+    if (!canSend.allowed) {
+        if (canSend.showUpgrade) {
+            showUpgradeModal(canSend.reason);
+        } else if (canSend.showNewChat) {
+            showNewChatModal(canSend.reason);
+        } else {
+            alert(canSend.reason);
+        }
+        return;
+    }
+
     isSending = true;
     disableInput(true);
 
@@ -39,7 +61,13 @@ export async function handleSendMessage() {
         const state = window.NexusAI.state;
         const currentChatId = state.get('currentChatId');
         const currentMessages = state.get('currentMessages');
-        const selectedModel = state.get('selectedModel');
+
+        // Determine which model to use
+        let modelToUse = userPlan.model;
+        if (canSend.useBasicModel) {
+            // Fallback to 20B for MAX plan after 2 uses
+            modelToUse = 'openai/gpt-oss-20b:novita';
+        }
 
         // Add user message to UI
         const userMessage = {
@@ -64,7 +92,7 @@ export async function handleSendMessage() {
         }));
 
         // Send to AI
-        const response = await sendMessageToAI(message, history, selectedModel);
+        const response = await sendMessageToAI(message, history, modelToUse);
 
         // Remove typing indicator
         removeTypingIndicator(typingId);
@@ -74,12 +102,16 @@ export async function handleSendMessage() {
             const aiMessage = {
                 role: 'assistant',
                 content: response.message,
-                model: response.model,
+                model: modelToUse,
                 timestamp: Date.now()
             };
 
-            renderAIMessage(response.message, response.model);
+            renderAIMessage(response.message, modelToUse);
             state.addMessage(aiMessage);
+
+            // Increment response count
+            const isAdvanced = modelToUse.includes('120b');
+            await incrementResponseCount(isAdvanced);
 
             // Save chat to Firebase
             const updatedMessages = state.get('currentMessages');
@@ -107,7 +139,7 @@ export async function handleSendMessage() {
             // Show error message
             renderAIMessage(
                 `❌ **Error**: ${response.error}\n\nPlease try again.`,
-                selectedModel
+                modelToUse
             );
         }
 
@@ -116,7 +148,7 @@ export async function handleSendMessage() {
         removeTypingIndicator('typing-indicator');
         renderAIMessage(
             '❌ **Error**: Something went wrong. Please try again.',
-            window.NexusAI.state.get('selectedModel')
+            'error'
         );
     } finally {
         isSending = false;
@@ -125,4 +157,4 @@ export async function handleSendMessage() {
     }
 }
 
-console.log('📦 Message Handler module loaded');
+console.log('📦 Message Handler (with limits) module loaded');
