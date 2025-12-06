@@ -1,7 +1,6 @@
 /**
  * ============================================
- * SIDEBAR MANAGER
- * Manage sidebar, chat history, navigation
+ * SIDEBAR MANAGER - WITH REQUEST PREMIUM
  * ============================================
  */
 
@@ -11,11 +10,13 @@ import { showMessages, showEmptyState, setChatTitle } from '../chat/chat-ui.js';
 import { handleSignOut } from '../auth/auth-handler.js';
 import { formatTime } from '../utils/date-formatter.js';
 import { navigateToChat, navigateToHome } from '../core/router.js';
+import { showPlanUpgrade } from '../plans/plan-manager.js';
 
 let sidebar;
 let toggleSidebarBtn;
 let closeSidebarBtn;
 let newChatBtn;
+let requestPremiumBtn;
 let settingsBtn;
 let logoutBtn;
 let chatHistoryList;
@@ -25,7 +26,6 @@ let sidebarOverlay;
  * Initialize sidebar
  */
 export function initSidebar() {
-    // Get elements
     sidebar = document.getElementById('sidebar');
     toggleSidebarBtn = document.getElementById('toggle-sidebar-btn');
     closeSidebarBtn = document.getElementById('close-sidebar-btn');
@@ -34,19 +34,47 @@ export function initSidebar() {
     logoutBtn = document.getElementById('logout-btn');
     chatHistoryList = document.getElementById('chat-history-list');
 
+    // Create request premium button
+    createRequestPremiumButton();
+    
     // Create overlay for mobile
     createSidebarOverlay();
 
-    // Setup event listeners
     setupEventListeners();
-
-    // Load chat history
     loadChatHistory();
 
-    // Make reload function global
     window.NexusAI.reloadSidebar = loadChatHistory;
 
     console.log('✅ Sidebar initialized');
+}
+
+/**
+ * Create request premium button
+ */
+function createRequestPremiumButton() {
+    const sidebarFooter = document.querySelector('.sidebar-footer');
+    if (!sidebarFooter) return;
+
+    requestPremiumBtn = document.createElement('button');
+    requestPremiumBtn.className = 'request-premium-btn';
+    requestPremiumBtn.innerHTML = `
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/>
+        </svg>
+        <span>Request Premium</span>
+    `;
+    
+    // Insert before settings button
+    sidebarFooter.insertBefore(requestPremiumBtn, settingsBtn);
+    
+    requestPremiumBtn.addEventListener('click', () => {
+        showPlanUpgrade();
+        
+        // Close sidebar on mobile
+        if (window.innerWidth <= 768) {
+            toggleSidebar();
+        }
+    });
 }
 
 /**
@@ -58,7 +86,6 @@ function setupEventListeners() {
     newChatBtn.addEventListener('click', handleNewChat);
     settingsBtn.addEventListener('click', openSettings);
     
-    // Settings button in header (mobile)
     const headerSettingsBtn = document.getElementById('header-settings-btn');
     if (headerSettingsBtn) {
         headerSettingsBtn.addEventListener('click', openSettings);
@@ -72,7 +99,6 @@ function setupEventListeners() {
 
     sidebarOverlay.addEventListener('click', toggleSidebar);
 
-    // Close sidebar on window resize
     window.addEventListener('resize', () => {
         if (window.innerWidth > 768) {
             sidebar.classList.remove('active');
@@ -163,7 +189,6 @@ function createChatItem(chat) {
     item.addEventListener('click', () => {
         loadChat(chat);
         
-        // Close sidebar on mobile
         if (window.innerWidth <= 768) {
             toggleSidebar();
         }
@@ -177,23 +202,18 @@ function createChatItem(chat) {
  */
 async function loadChat(chat) {
     try {
-        // Set current chat
         window.NexusAI.state.setCurrentChat(chat.id, chat.messages || []);
 
-        // Update UI
         showMessages();
         setChatTitle(chat.title);
         clearMessages();
         renderMessages(chat.messages || []);
 
-        // Update active state
         document.querySelectorAll('.chat-item').forEach(item => {
             item.classList.toggle('active', item.dataset.chatId === chat.id);
         });
 
-        // Update URL
         navigateToChat(chat.id);
-
     } catch (error) {
         console.error('❌ Error loading chat:', error);
     }
@@ -203,23 +223,18 @@ async function loadChat(chat) {
  * Handle new chat
  */
 function handleNewChat() {
-    // Reset state
     window.NexusAI.state.setCurrentChat(null, []);
 
-    // Update UI
     showEmptyState();
     setChatTitle('New Chat');
     clearMessages();
 
-    // Remove active state from all chats
     document.querySelectorAll('.chat-item').forEach(item => {
         item.classList.remove('active');
     });
 
-    // Navigate to home
     navigateToHome();
 
-    // Close sidebar on mobile
     if (window.innerWidth <= 768) {
         toggleSidebar();
     }
@@ -229,12 +244,10 @@ function handleNewChat() {
  * Open settings
  */
 function openSettings() {
-    // Import and open settings modal
     import('./settings-modal.js').then(module => {
         module.openSettingsModal();
     });
 
-    // Close sidebar on mobile
     if (window.innerWidth <= 768) {
         toggleSidebar();
     }
@@ -249,4 +262,4 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
-console.log('📦 Sidebar Manager module loaded');
+console.log('📦 Sidebar Manager (Updated) loaded');
