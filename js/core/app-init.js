@@ -1,7 +1,7 @@
 /**
  * ============================================
- * ENHANCED APP INITIALIZATION
- * With beautiful loading animations
+ * FIXED APP INITIALIZATION
+ * With proper redirect after login
  * ============================================
  */
 
@@ -11,6 +11,7 @@ import { initChatUI } from '../chat/chat-ui.js';
 import { initSidebar } from '../ui/sidebar-manager.js';
 import { initRouter } from './router.js';
 import { StateManager } from './state-manager.js';
+import { getUserPlanData } from '../plans/permission-manager.js';
 
 // Global state
 window.NexusAI = {
@@ -28,12 +29,23 @@ async function initApp() {
         // Show loader animation
         showLoader();
 
-        // Wait for auth state
-        const user = await checkAuth();
+        // Wait for auth state (FIXED: proper auth check)
+        const user = await waitForAuthState();
 
         if (user) {
             console.log('✅ User authenticated:', user.email);
+            
+            // Store user in state
+            window.NexusAI.state.setUser(user);
+
+            // Load user plan
+            const planData = await getUserPlanData();
+            window.NexusAI.state.set('userPlanData', planData);
+
+            // Initialize modules
             await initializeModules();
+            
+            // Show main app (FIXED: immediate show)
             showMainApp();
         } else {
             console.log('ℹ️ No user - showing auth screen');
@@ -58,10 +70,18 @@ async function initApp() {
 }
 
 /**
- * Check authentication state
+ * Wait for auth state (FIXED)
  */
-function checkAuth() {
+function waitForAuthState() {
     return new Promise((resolve) => {
+        // Check if already signed in
+        const currentUser = firebase.auth().currentUser;
+        if (currentUser) {
+            resolve(currentUser);
+            return;
+        }
+
+        // Wait for auth state change
         const unsubscribe = firebase.auth().onAuthStateChanged((user) => {
             unsubscribe();
             resolve(user);
@@ -85,7 +105,7 @@ async function initializeModules() {
 }
 
 /**
- * Show main app with animation
+ * Show main app with animation (FIXED: no delay)
  */
 function showMainApp() {
     const authScreen = document.getElementById('auth-screen');
@@ -93,12 +113,11 @@ function showMainApp() {
     
     authScreen.style.display = 'none';
     mainApp.style.display = 'flex';
-    mainApp.style.opacity = '0';
     
-    setTimeout(() => {
-        mainApp.style.transition = 'opacity 0.5s ease';
-        mainApp.style.opacity = '1';
-    }, 50);
+    // Immediate show without delay
+    mainApp.style.opacity = '1';
+    
+    console.log('✅ Main app displayed');
 }
 
 /**
@@ -201,14 +220,24 @@ function showError(message) {
 }
 
 /**
- * Handle auth state changes (for logout/login)
+ * Handle auth state changes (FIXED: immediate redirect)
  */
 export function setupAuthListener() {
-    firebase.auth().onAuthStateChanged((user) => {
+    firebase.auth().onAuthStateChanged(async (user) => {
         if (user) {
             if (!window.NexusAI.initialized) {
+                console.log('✅ User logged in, initializing app...');
+                
+                // Store user
+                window.NexusAI.state.setUser(user);
+
+                // Load user plan
+                const planData = await getUserPlanData();
+                window.NexusAI.state.set('userPlanData', planData);
+
+                // Initialize and show immediately
+                await initializeModules();
                 showMainApp();
-                initializeModules();
                 window.NexusAI.initialized = true;
             }
         } else {
@@ -244,34 +273,6 @@ function initializeLibraries() {
         });
     }
 
-    // Add custom Tippy theme
-    const style = document.createElement('style');
-    style.textContent = `
-        .tippy-box[data-theme~='custom'] {
-            background: rgba(24, 24, 27, 0.95);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(37, 99, 235, 0.3);
-            color: #fafafa;
-            font-size: 14px;
-            font-weight: 500;
-            padding: 8px 12px;
-            border-radius: 8px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
-        }
-        .tippy-box[data-theme~='custom'][data-placement^='top'] > .tippy-arrow::before {
-            border-top-color: rgba(24, 24, 27, 0.95);
-        }
-        .tippy-box[data-theme~='custom'][data-placement^='bottom'] > .tippy-arrow::before {
-            border-bottom-color: rgba(24, 24, 27, 0.95);
-        }
-    `;
-    document.head.appendChild(style);
-
-    // Initialize GSAP ScrollTrigger if available
-    if (window.gsap && window.ScrollTrigger) {
-        window.gsap.registerPlugin(window.ScrollTrigger);
-    }
-
     // Add global keyboard shortcuts
     document.addEventListener('keydown', (e) => {
         // Ctrl/Cmd + K to focus search/input
@@ -290,105 +291,8 @@ function initializeLibraries() {
         }
     });
 
-    // Add visibility change handler for better performance
-    document.addEventListener('visibilitychange', () => {
-        if (document.hidden) {
-            // Pause animations when tab is hidden
-            document.body.style.animationPlayState = 'paused';
-        } else {
-            // Resume animations
-            document.body.style.animationPlayState = 'running';
-        }
-    });
-
-    // Add online/offline indicators
-    window.addEventListener('online', () => {
-        const statusIndicator = document.querySelector('.status-indicator');
-        if (statusIndicator) {
-            statusIndicator.classList.add('online');
-            showSuccessNotification('Connection restored');
-        }
-    });
-
-    window.addEventListener('offline', () => {
-        const statusIndicator = document.querySelector('.status-indicator');
-        if (statusIndicator) {
-            statusIndicator.classList.remove('online');
-            showWarningNotification('No internet connection');
-        }
-    });
-
     console.log('✅ External libraries initialized');
 }
-
-/**
- * Show success notification
- */
-function showSuccessNotification(message) {
-    createNotification(message, 'success');
-}
-
-/**
- * Show warning notification
- */
-function showWarningNotification(message) {
-    createNotification(message, 'warning');
-}
-
-/**
- * Create notification
- */
-function createNotification(message, type) {
-    const colors = {
-        success: '#10b981',
-        warning: '#f59e0b',
-        error: '#ef4444',
-        info: '#3b82f6'
-    };
-
-    const notification = document.createElement('div');
-    notification.style.cssText = `
-        position: fixed;
-        bottom: 24px;
-        right: 24px;
-        background: ${colors[type] || colors.info};
-        color: white;
-        padding: 16px 24px;
-        border-radius: 12px;
-        font-size: 14px;
-        font-weight: 600;
-        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
-        z-index: 10000;
-        animation: slideInRight 0.3s ease;
-        max-width: 300px;
-    `;
-    notification.textContent = message;
-    
-    document.body.appendChild(notification);
-    
-    setTimeout(() => {
-        notification.style.transition = 'all 0.3s ease';
-        notification.style.transform = 'translateX(400px)';
-        notification.style.opacity = '0';
-        setTimeout(() => notification.remove(), 300);
-    }, 3000);
-}
-
-// Add slideInRight animation
-const style = document.createElement('style');
-style.textContent = `
-    @keyframes slideInRight {
-        from {
-            transform: translateX(400px);
-            opacity: 0;
-        }
-        to {
-            transform: translateX(0);
-            opacity: 1;
-        }
-    }
-`;
-document.head.appendChild(style);
 
 // Initialize on DOM ready
 if (document.readyState === 'loading') {
@@ -400,4 +304,4 @@ if (document.readyState === 'loading') {
 // Setup global auth listener
 setupAuthListener();
 
-console.log('📦 Enhanced App Init module loaded');
+console.log('📦 Fixed App Init module loaded');
