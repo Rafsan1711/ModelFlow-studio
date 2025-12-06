@@ -1,7 +1,7 @@
 /**
  * ============================================
- * MESSAGE HANDLER
- * Send and receive messages
+ * MESSAGE HANDLER - WITH PLAN MANAGEMENT
+ * Updated to check limits and use correct models
  * ============================================
  */
 
@@ -12,15 +12,19 @@ import {
     clearInput, 
     disableInput, 
     focusInput,
-    showMessages 
+    showMessages,
+    updateUsageDisplay
 } from './chat-ui.js';
 import { createChat, saveChat, generateChatTitle } from './chat-manager.js';
 import { navigateToChat } from '../core/router.js';
+import { canSendMessage, incrementUsage, getModelForRequest } from '../plans/plan-manager.js';
+import { showPlanUpgrade } from '../plans/plan-manager.js';
+import { showError, showWarning } from '../ui/notifications.js';
 
 let isSending = false;
 
 /**
- * Handle send message
+ * Handle send message - WITH PLAN CHECKS
  */
 export async function handleSendMessage() {
     if (isSending) return;
@@ -28,20 +32,39 @@ export async function handleSendMessage() {
     const message = getInputValue();
     if (!message) return;
 
+    const user = window.NexusAI.state.get('user');
+    if (!user) {
+        showError('Please log in to send messages');
+        return;
+    }
+
+    // Check if user can send message
+    const permission = canSendMessage(user.uid);
+    if (!permission.allowed) {
+        if (permission.reason === 'daily_limit') {
+            showWarning(permission.message);
+            showPlanUpgrade();
+        } else if (permission.reason === 'chat_limit') {
+            showWarning(permission.message);
+        }
+        return;
+    }
+
     isSending = true;
     disableInput(true);
 
     try {
-        // Show messages container
         showMessages();
 
-        // Get current state
         const state = window.NexusAI.state;
         const currentChatId = state.get('currentChatId');
         const currentMessages = state.get('currentMessages');
-        const selectedModel = state.get('selectedModel');
+        const isNewChat = !currentChatId || currentMessages.length === 0;
 
-        // Add user message to UI
+        // Get model based on plan
+        const modelToUse = getModelForRequest();
+
+        // Add user message
         const userMessage = {
             role: 'user',
             content: message,
@@ -51,26 +74,24 @@ export async function handleSendMessage() {
         renderUserMessage(message);
         state.addMessage(userMessage);
 
-        // Clear input
         clearInput();
 
         // Show typing indicator
         const typingId = addTypingIndicator();
 
-        // Prepare history for API
+        // Prepare history
         const history = currentMessages.map(msg => ({
             role: msg.role,
             content: msg.content
         }));
 
-        // Send to AI
-        const response = await sendMessageToAI(message, history, selectedModel);
+        // Send to AI with correct model
+        const response = await sendMessageToAI(message, history, modelToUse);
 
-        // Remove typing indicator
         removeTypingIndicator(typingId);
 
         if (response.success) {
-            // Add AI message to UI
+            // Add AI message
             const aiMessage = {
                 role: 'assistant',
                 content: response.message,
@@ -81,33 +102,33 @@ export async function handleSendMessage() {
             renderAIMessage(response.message, response.model);
             state.addMessage(aiMessage);
 
-            // Save chat to Firebase
+            // Increment usage
+            await incrementUsage(user.uid, isNewChat);
+
+            // Update usage display
+            updateUsageDisplay();
+
+            // Save chat
             const updatedMessages = state.get('currentMessages');
             
             if (!currentChatId) {
-                // Create new chat
                 const title = generateChatTitle(message);
                 const newChat = await createChat(title, updatedMessages);
                 state.setCurrentChat(newChat.id, updatedMessages);
-                
-                // Update URL
                 navigateToChat(newChat.id);
                 
-                // Reload sidebar
                 if (window.NexusAI.reloadSidebar) {
                     window.NexusAI.reloadSidebar();
                 }
             } else {
-                // Update existing chat
                 const title = state.get('chats').find(c => c.id === currentChatId)?.title || 'Chat';
                 await saveChat(currentChatId, title, updatedMessages);
             }
 
         } else {
-            // Show error message
             renderAIMessage(
                 `❌ **Error**: ${response.error}\n\nPlease try again.`,
-                selectedModel
+                modelToUse
             );
         }
 
@@ -116,7 +137,7 @@ export async function handleSendMessage() {
         removeTypingIndicator('typing-indicator');
         renderAIMessage(
             '❌ **Error**: Something went wrong. Please try again.',
-            window.NexusAI.state.get('selectedModel')
+            'unknown'
         );
     } finally {
         isSending = false;
@@ -125,4 +146,4 @@ export async function handleSendMessage() {
     }
 }
 
-console.log('📦 Message Handler module loaded');
+console.log('📦 Message Handler (Updated) loaded');
