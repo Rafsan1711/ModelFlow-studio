@@ -1,5 +1,5 @@
 /* ============================================
-   SIDEBAR - Chat History & Navigation
+   SIDEBAR - WITH REQUEST PREMIUM BUTTON
    ============================================ */
 
 .sidebar {
@@ -52,6 +52,9 @@
     justify-content: center;
     color: var(--text-secondary);
     transition: all var(--transition-fast);
+    background: transparent;
+    border: none;
+    cursor: pointer;
 }
 
 .close-sidebar-btn:hover {
@@ -73,6 +76,8 @@
     font-weight: var(--font-weight-semibold);
     transition: all var(--transition-fast);
     flex-shrink: 0;
+    border: none;
+    cursor: pointer;
 }
 
 .new-chat-btn:hover {
@@ -168,6 +173,50 @@
     flex-shrink: 0;
 }
 
+/* Request Premium Button - NEW */
+.request-premium-btn {
+    padding: var(--space-md);
+    background: linear-gradient(135deg, #58a6ff 0%, #1f6feb 100%);
+    border: none;
+    border-radius: var(--radius-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-sm);
+    color: white;
+    font-weight: var(--font-weight-semibold);
+    transition: all var(--transition-fast);
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+}
+
+.request-premium-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+    transition: left 0.5s;
+}
+
+.request-premium-btn:hover::before {
+    left: 100%;
+}
+
+.request-premium-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(88, 166, 255, 0.4);
+}
+
+.request-premium-btn svg {
+    width: 20px;
+    height: 20px;
+}
+
+/* Regular Sidebar Buttons */
 .sidebar-btn {
     padding: var(--space-md);
     background: transparent;
@@ -179,6 +228,7 @@
     color: var(--text-primary);
     font-weight: var(--font-weight-medium);
     transition: all var(--transition-fast);
+    cursor: pointer;
 }
 
 .sidebar-btn:hover {
@@ -191,7 +241,7 @@
     color: var(--text-secondary);
 }
 
-/* Empty State in Sidebar */
+/* Empty State */
 .chat-history-empty {
     text-align: center;
     padding: var(--space-2xl) var(--space-lg);
@@ -207,4 +257,36 @@
 
 .chat-history-empty p {
     font-size: var(--font-size-sm);
+}
+
+/* MOBILE RESPONSIVE */
+@media (max-width: 768px) {
+    .sidebar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        height: 100vh;
+        z-index: 1000;
+        transform: translateX(-100%);
+        transition: transform 0.3s ease;
+        box-shadow: 4px 0 20px rgba(0, 0, 0, 0.3);
+    }
+
+    .sidebar.active {
+        transform: translateX(0);
+    }
+
+    .close-sidebar-btn {
+        display: flex;
+    }
+
+    .sidebar-footer {
+        padding: var(--space-md);
+    }
+
+    .request-premium-btn,
+    .sidebar-btn {
+        padding: var(--space-sm);
+        font-size: var(--font-size-sm);
+    }
 }
