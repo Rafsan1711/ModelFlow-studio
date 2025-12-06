@@ -1,19 +1,19 @@
 /**
  * ============================================
- * ULTIMATE PROFESSIONAL MARKDOWN PARSER
- * With Highlight.js Integration
+ * MARKDOWN PARSER - FIXED CODE BLOCKS
+ * Fixed: Code blocks now display properly with syntax highlighting
  * ============================================
  */
 
 /**
- * Parse markdown to beautiful HTML
+ * Parse markdown to HTML - FIXED
  */
 export function parseMarkdown(text) {
     if (!text) return '';
 
     let html = text;
 
-    // Code blocks FIRST (preserve them)
+    // Store code blocks FIRST
     const codeBlocks = [];
     html = html.replace(/```(\w+)?\n([\s\S]*?)```/g, (match, language, code) => {
         const placeholder = `___CODE_BLOCK_${codeBlocks.length}___`;
@@ -21,7 +21,7 @@ export function parseMarkdown(text) {
         return placeholder;
     });
 
-    // Inline code (preserve)
+    // Store inline code
     const inlineCodes = [];
     html = html.replace(/`([^`]+)`/g, (match, code) => {
         const placeholder = `___INLINE_CODE_${inlineCodes.length}___`;
@@ -32,12 +32,12 @@ export function parseMarkdown(text) {
     // Escape HTML
     html = escapeHtml(html);
 
-    // Headings (clean, no icons)
+    // Headings
     html = html.replace(/^### (.+)$/gm, '<h3>$1</h3>');
     html = html.replace(/^## (.+)$/gm, '<h2>$1</h2>');
     html = html.replace(/^# (.+)$/gm, '<h1>$1</h1>');
 
-    // Bold (must come before italic)
+    // Bold
     html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
     html = html.replace(/__(.+?)__/g, '<strong>$1</strong>');
 
@@ -55,10 +55,8 @@ export function parseMarkdown(text) {
     html = html.replace(/^&gt; (.+)$/gm, '<blockquote>$1</blockquote>');
     html = html.replace(/^> (.+)$/gm, '<blockquote>$1</blockquote>');
 
-    // Unordered lists
+    // Lists
     html = parseUnorderedLists(html);
-
-    // Ordered lists
     html = parseOrderedLists(html);
 
     // Tables
@@ -74,12 +72,6 @@ export function parseMarkdown(text) {
 
     // Highlights
     html = html.replace(/==(.+?)==/g, '<mark>$1</mark>');
-
-    // Info boxes
-    html = html.replace(/^\[!NOTE\] (.+)$/gm, '<div class="info-box note"><span class="box-icon">ℹ️</span><span class="box-content">$1</span></div>');
-    html = html.replace(/^\[!TIP\] (.+)$/gm, '<div class="info-box tip"><span class="box-icon">💡</span><span class="box-content">$1</span></div>');
-    html = html.replace(/^\[!WARNING\] (.+)$/gm, '<div class="info-box warning"><span class="box-icon">⚠️</span><span class="box-content">$1</span></div>');
-    html = html.replace(/^\[!IMPORTANT\] (.+)$/gm, '<div class="info-box important"><span class="box-icon">🔥</span><span class="box-content">$1</span></div>');
 
     // Restore inline code
     inlineCodes.forEach((code, index) => {
@@ -101,7 +93,8 @@ export function parseMarkdown(text) {
             para.startsWith('<blockquote') ||
             para.startsWith('<table') ||
             para.startsWith('<hr') ||
-            para.startsWith('<div')) {
+            para.startsWith('<div') ||
+            para.startsWith('___CODE_BLOCK_')) {
             return para;
         }
         
@@ -111,7 +104,7 @@ export function parseMarkdown(text) {
     // Single line breaks
     html = html.replace(/\n/g, '<br>');
 
-    // Restore code blocks with syntax highlighting
+    // FIXED: Restore code blocks properly
     codeBlocks.forEach((block, index) => {
         html = html.replace(
             `___CODE_BLOCK_${index}___`,
@@ -123,14 +116,15 @@ export function parseMarkdown(text) {
 }
 
 /**
- * Create code block with syntax highlighting
+ * Create code block - FIXED & ENHANCED
  */
 function createCodeBlock(language, code) {
     const escapedCode = escapeHtml(code);
     const languageDisplay = getLanguageDisplay(language);
-    
-    // Generate unique ID for this code block
     const blockId = `code-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    
+    // Store raw code for copying
+    const rawCode = code.replace(/"/g, '&quot;').replace(/'/g, '&#39;');
     
     return `<div class="code-block-wrapper">
         <div class="code-header">
@@ -141,7 +135,7 @@ function createCodeBlock(language, code) {
                 </svg>
                 <span>${languageDisplay}</span>
             </div>
-            <button class="copy-btn" onclick="copyCode('${blockId}')" data-copied="false">
+            <button class="copy-code-btn" onclick="window.copyCodeToClipboard('${blockId}')" type="button">
                 <svg class="copy-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
                     <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
@@ -152,7 +146,7 @@ function createCodeBlock(language, code) {
                 <span class="copy-text">Copy</span>
             </button>
         </div>
-        <pre><code id="${blockId}" class="language-${language}" data-raw-code="${escapedCode.replace(/"/g, '&quot;')}">${escapedCode}</code></pre>
+        <pre class="code-content"><code id="${blockId}" class="language-${language}" data-raw="${rawCode}">${escapedCode}</code></pre>
     </div>`;
 }
 
@@ -294,7 +288,7 @@ function parseTables(text) {
         } else {
             if (inTable) {
                 tableRows.push('</tbody>');
-                result.push(`<table>${tableRows.join('')}</table>`);
+                result.push(`<table class="markdown-table">${tableRows.join('')}</table>`);
                 inTable = false;
                 tableRows = [];
                 isHeaderRow = true;
@@ -305,7 +299,7 @@ function parseTables(text) {
 
     if (inTable) {
         tableRows.push('</tbody>');
-        result.push(`<table>${tableRows.join('')}</table>`);
+        result.push(`<table class="markdown-table">${tableRows.join('')}</table>`);
     }
 
     return result.join('\n');
@@ -321,34 +315,33 @@ function escapeHtml(text) {
 }
 
 /**
- * Copy code to clipboard (global function)
+ * Copy code to clipboard - FIXED (Global function)
  */
-window.copyCode = function(blockId) {
+window.copyCodeToClipboard = function(blockId) {
     const codeElement = document.getElementById(blockId);
     if (!codeElement) return;
     
-    const rawCode = codeElement.getAttribute('data-raw-code');
-    const textToCopy = rawCode.replace(/&quot;/g, '"')
-                                .replace(/&lt;/g, '<')
-                                .replace(/&gt;/g, '>')
-                                .replace(/&amp;/g, '&');
+    const rawCode = codeElement.getAttribute('data-raw');
+    const textToCopy = rawCode
+        .replace(/&quot;/g, '"')
+        .replace(/&#39;/g, "'")
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>')
+        .replace(/&amp;/g, '&');
     
     navigator.clipboard.writeText(textToCopy).then(() => {
-        // Find the button
-        const button = codeElement.closest('.code-block-wrapper').querySelector('.copy-btn');
+        const button = codeElement.closest('.code-block-wrapper').querySelector('.copy-code-btn');
         if (!button) return;
         
         const copyIcon = button.querySelector('.copy-icon');
         const checkIcon = button.querySelector('.check-icon');
         const copyText = button.querySelector('.copy-text');
         
-        // Show success state
         copyIcon.style.display = 'none';
         checkIcon.style.display = 'block';
         copyText.textContent = 'Copied!';
         button.classList.add('copied');
         
-        // Reset after 2 seconds
         setTimeout(() => {
             copyIcon.style.display = 'block';
             checkIcon.style.display = 'none';
@@ -356,25 +349,27 @@ window.copyCode = function(blockId) {
             button.classList.remove('copied');
         }, 2000);
     }).catch(err => {
-        console.error('Failed to copy:', err);
+        console.error('Copy failed:', err);
     });
 };
 
 /**
- * Initialize Highlight.js when code blocks are rendered
+ * Initialize syntax highlighting - FIXED
  */
 export function initializeSyntaxHighlighting() {
     if (window.hljs) {
-        document.querySelectorAll('pre code').forEach((block) => {
-            if (!block.dataset.highlighted) {
+        document.querySelectorAll('pre code:not(.highlighted)').forEach((block) => {
+            try {
                 window.hljs.highlightElement(block);
-                block.dataset.highlighted = 'yes';
+                block.classList.add('highlighted');
+            } catch (error) {
+                console.error('Highlighting error:', error);
             }
         });
     }
 }
 
-// Auto-initialize highlighting when available
+// Auto-highlight on load
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {
         setTimeout(initializeSyntaxHighlighting, 100);
@@ -383,4 +378,7 @@ if (document.readyState === 'loading') {
     setTimeout(initializeSyntaxHighlighting, 100);
 }
 
-console.log('📦 Ultimate Markdown Parser loaded');
+// Export for use in message renderer
+window.initializeSyntaxHighlighting = initializeSyntaxHighlighting;
+
+console.log('📦 Markdown Parser (FIXED) loaded');
