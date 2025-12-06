@@ -1,23 +1,23 @@
 /**
  * ============================================
  * MARKDOWN PARSER - FIXED CODE BLOCKS
- * Fixed: Code blocks now display properly with syntax highlighting
+ * Works like old prototype
  * ============================================
  */
 
 /**
- * Parse markdown to HTML - FIXED
+ * Parse markdown to HTML
  */
 export function parseMarkdown(text) {
     if (!text) return '';
 
     let html = text;
 
-    // Store code blocks FIRST
+    // Store code blocks first
     const codeBlocks = [];
-    html = html.replace(/```(\w+)?\n([\s\S]*?)```/g, (match, language, code) => {
+    html = html.replace(/```(\w+)?\n([\s\S]*?)```/g, (match, lang, code) => {
         const placeholder = `___CODE_BLOCK_${codeBlocks.length}___`;
-        codeBlocks.push({ language: language || 'plaintext', code: code.trim() });
+        codeBlocks.push({ lang: lang || 'code', code: code.trim() });
         return placeholder;
     });
 
@@ -45,40 +45,26 @@ export function parseMarkdown(text) {
     html = html.replace(/\*([^\*]+?)\*/g, '<em>$1</em>');
     html = html.replace(/_([^_]+?)_/g, '<em>$1</em>');
 
-    // Strikethrough
-    html = html.replace(/~~(.+?)~~/g, '<del>$1</del>');
-
     // Links
-    html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
-
-    // Blockquotes
-    html = html.replace(/^&gt; (.+)$/gm, '<blockquote>$1</blockquote>');
-    html = html.replace(/^> (.+)$/gm, '<blockquote>$1</blockquote>');
+    html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank">$1</a>');
 
     // Lists
     html = parseUnorderedLists(html);
     html = parseOrderedLists(html);
+
+    // Blockquotes
+    html = html.replace(/^&gt; (.+)$/gm, '<blockquote>$1</blockquote>');
+    html = html.replace(/^> (.+)$/gm, '<blockquote>$1</blockquote>');
 
     // Tables
     html = parseTables(html);
 
     // Horizontal rules
     html = html.replace(/^---$/gm, '<hr>');
-    html = html.replace(/^\*\*\*$/gm, '<hr>');
-
-    // Task lists
-    html = html.replace(/^- \[ \] (.+)$/gm, '<div class="task-item"><input type="checkbox" disabled><span>$1</span></div>');
-    html = html.replace(/^- \[x\] (.+)$/gm, '<div class="task-item"><input type="checkbox" checked disabled><span class="completed">$1</span></div>');
-
-    // Highlights
-    html = html.replace(/==(.+?)==/g, '<mark>$1</mark>');
 
     // Restore inline code
-    inlineCodes.forEach((code, index) => {
-        html = html.replace(
-            `___INLINE_CODE_${index}___`,
-            `<code class="inline-code">${code}</code>`
-        );
+    inlineCodes.forEach((code, i) => {
+        html = html.replace(`___INLINE_CODE_${i}___`, `<code>${code}</code>`);
     });
 
     // Paragraphs
@@ -89,11 +75,9 @@ export function parseMarkdown(text) {
         if (para.startsWith('<h') || 
             para.startsWith('<ul') || 
             para.startsWith('<ol') || 
-            para.startsWith('<pre') || 
             para.startsWith('<blockquote') ||
             para.startsWith('<table') ||
             para.startsWith('<hr') ||
-            para.startsWith('<div') ||
             para.startsWith('___CODE_BLOCK_')) {
             return para;
         }
@@ -101,89 +85,62 @@ export function parseMarkdown(text) {
         return `<p>${para}</p>`;
     }).join('\n');
 
-    // Single line breaks
+    // Line breaks
     html = html.replace(/\n/g, '<br>');
 
-    // FIXED: Restore code blocks properly
-    codeBlocks.forEach((block, index) => {
-        html = html.replace(
-            `___CODE_BLOCK_${index}___`,
-            createCodeBlock(block.language, block.code)
-        );
+    // Restore code blocks with proper structure
+    codeBlocks.forEach((block, i) => {
+        html = html.replace(`___CODE_BLOCK_${i}___`, createCodeBlock(block.lang, block.code));
     });
 
     return html;
 }
 
 /**
- * Create code block - FIXED & ENHANCED
+ * Create code block with header and copy button
  */
-function createCodeBlock(language, code) {
+function createCodeBlock(lang, code) {
     const escapedCode = escapeHtml(code);
-    const languageDisplay = getLanguageDisplay(language);
     const blockId = `code-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     
-    // Store raw code for copying
-    const rawCode = code.replace(/"/g, '&quot;').replace(/'/g, '&#39;');
-    
-    return `<div class="code-block-wrapper">
-        <div class="code-header">
-            <div class="code-language-badge">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <polyline points="16 18 22 12 16 6"></polyline>
-                    <polyline points="8 6 2 12 8 18"></polyline>
-                </svg>
-                <span>${languageDisplay}</span>
-            </div>
-            <button class="copy-code-btn" onclick="window.copyCodeToClipboard('${blockId}')" type="button">
-                <svg class="copy-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-                </svg>
-                <svg class="check-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display: none;">
-                    <polyline points="20 6 9 17 4 12"></polyline>
-                </svg>
-                <span class="copy-text">Copy</span>
-            </button>
+    return `<div class="code-block">
+        <div class="code-block-header">
+            <span class="code-language">${lang}</span>
+            <button class="copy-code-btn" onclick="window.copyCode('${blockId}')">Copy</button>
         </div>
-        <pre class="code-content"><code id="${blockId}" class="language-${language}" data-raw="${rawCode}">${escapedCode}</code></pre>
+        <pre><code id="${blockId}" data-code="${escapedCode.replace(/"/g, '&quot;')}">${escapedCode}</code></pre>
     </div>`;
 }
 
 /**
- * Get language display name
+ * Copy code function (global)
  */
-function getLanguageDisplay(lang) {
-    const languages = {
-        'javascript': 'JavaScript',
-        'typescript': 'TypeScript',
-        'python': 'Python',
-        'java': 'Java',
-        'cpp': 'C++',
-        'c': 'C',
-        'csharp': 'C#',
-        'ruby': 'Ruby',
-        'go': 'Go',
-        'rust': 'Rust',
-        'php': 'PHP',
-        'swift': 'Swift',
-        'kotlin': 'Kotlin',
-        'html': 'HTML',
-        'css': 'CSS',
-        'scss': 'SCSS',
-        'json': 'JSON',
-        'xml': 'XML',
-        'yaml': 'YAML',
-        'markdown': 'Markdown',
-        'bash': 'Bash',
-        'shell': 'Shell',
-        'sql': 'SQL',
-        'r': 'R',
-        'dart': 'Dart',
-        'plaintext': 'Text'
-    };
-    return languages[lang] || lang.toUpperCase();
-}
+window.copyCode = function(blockId) {
+    const codeEl = document.getElementById(blockId);
+    if (!codeEl) return;
+    
+    const code = codeEl.getAttribute('data-code')
+        .replace(/&quot;/g, '"')
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>')
+        .replace(/&amp;/g, '&');
+    
+    navigator.clipboard.writeText(code).then(() => {
+        const btn = codeEl.closest('.code-block').querySelector('.copy-code-btn');
+        const originalText = btn.textContent;
+        btn.textContent = 'Copied!';
+        btn.style.background = 'rgba(16, 185, 129, 0.2)';
+        btn.style.color = '#10b981';
+        
+        setTimeout(() => {
+            btn.textContent = originalText;
+            btn.style.background = '';
+            btn.style.color = '';
+        }, 2000);
+    }).catch(err => {
+        console.error('Copy failed:', err);
+    });
+};
 
 /**
  * Parse unordered lists
@@ -192,29 +149,27 @@ function parseUnorderedLists(text) {
     const lines = text.split('\n');
     let result = [];
     let inList = false;
-    let listItems = [];
+    let items = [];
 
-    lines.forEach((line) => {
-        const match = line.match(/^[-*+] (.+)$/);
-        
-        if (match) {
+    lines.forEach(line => {
+        if (line.match(/^[-*+] (.+)$/)) {
             if (!inList) {
                 inList = true;
-                listItems = [];
+                items = [];
             }
-            listItems.push(`<li>${match[1]}</li>`);
+            items.push(`<li>${line.replace(/^[-*+] /, '')}</li>`);
         } else {
             if (inList) {
-                result.push(`<ul>${listItems.join('')}</ul>`);
+                result.push(`<ul>${items.join('')}</ul>`);
                 inList = false;
-                listItems = [];
+                items = [];
             }
             result.push(line);
         }
     });
 
     if (inList) {
-        result.push(`<ul>${listItems.join('')}</ul>`);
+        result.push(`<ul>${items.join('')}</ul>`);
     }
 
     return result.join('\n');
@@ -227,29 +182,27 @@ function parseOrderedLists(text) {
     const lines = text.split('\n');
     let result = [];
     let inList = false;
-    let listItems = [];
+    let items = [];
 
-    lines.forEach((line) => {
-        const match = line.match(/^(\d+)\. (.+)$/);
-        
-        if (match) {
+    lines.forEach(line => {
+        if (line.match(/^\d+\. (.+)$/)) {
             if (!inList) {
                 inList = true;
-                listItems = [];
+                items = [];
             }
-            listItems.push(`<li>${match[2]}</li>`);
+            items.push(`<li>${line.replace(/^\d+\. /, '')}</li>`);
         } else {
             if (inList) {
-                result.push(`<ol>${listItems.join('')}</ol>`);
+                result.push(`<ol>${items.join('')}</ol>`);
                 inList = false;
-                listItems = [];
+                items = [];
             }
             result.push(line);
         }
     });
 
     if (inList) {
-        result.push(`<ol>${listItems.join('')}</ol>`);
+        result.push(`<ol>${items.join('')}</ol>`);
     }
 
     return result.join('\n');
@@ -262,44 +215,42 @@ function parseTables(text) {
     const lines = text.split('\n');
     let result = [];
     let inTable = false;
-    let tableRows = [];
-    let isHeaderRow = true;
+    let rows = [];
+    let isHeader = true;
 
-    lines.forEach((line) => {
+    lines.forEach(line => {
         if (line.trim().startsWith('|') && line.trim().endsWith('|')) {
-            if (line.match(/^\|[\s-:|]+\|$/)) {
-                return;
-            }
+            // Skip separator line
+            if (line.match(/^\|[\s-:|]+\|$/)) return;
 
             if (!inTable) {
                 inTable = true;
-                tableRows = [];
-                isHeaderRow = true;
+                rows = [];
+                isHeader = true;
             }
 
-            const cells = line.split('|').filter(cell => cell.trim()).map(cell => cell.trim());
+            const cells = line.split('|').filter(c => c.trim()).map(c => c.trim());
             
-            if (isHeaderRow) {
-                tableRows.push(`<thead><tr>${cells.map(cell => `<th>${cell}</th>`).join('')}</tr></thead><tbody>`);
-                isHeaderRow = false;
+            if (isHeader) {
+                rows.push(`<thead><tr>${cells.map(c => `<th>${c}</th>`).join('')}</tr></thead><tbody>`);
+                isHeader = false;
             } else {
-                tableRows.push(`<tr>${cells.map(cell => `<td>${cell}</td>`).join('')}</tr>`);
+                rows.push(`<tr>${cells.map(c => `<td>${c}</td>`).join('')}</tr>`);
             }
         } else {
             if (inTable) {
-                tableRows.push('</tbody>');
-                result.push(`<table class="markdown-table">${tableRows.join('')}</table>`);
+                rows.push('</tbody>');
+                result.push(`<table>${rows.join('')}</table>`);
                 inTable = false;
-                tableRows = [];
-                isHeaderRow = true;
+                isHeader = true;
             }
             result.push(line);
         }
     });
 
     if (inTable) {
-        tableRows.push('</tbody>');
-        result.push(`<table class="markdown-table">${tableRows.join('')}</table>`);
+        rows.push('</tbody>');
+        result.push(`<table>${rows.join('')}</table>`);
     }
 
     return result.join('\n');
@@ -314,71 +265,4 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
-/**
- * Copy code to clipboard - FIXED (Global function)
- */
-window.copyCodeToClipboard = function(blockId) {
-    const codeElement = document.getElementById(blockId);
-    if (!codeElement) return;
-    
-    const rawCode = codeElement.getAttribute('data-raw');
-    const textToCopy = rawCode
-        .replace(/&quot;/g, '"')
-        .replace(/&#39;/g, "'")
-        .replace(/&lt;/g, '<')
-        .replace(/&gt;/g, '>')
-        .replace(/&amp;/g, '&');
-    
-    navigator.clipboard.writeText(textToCopy).then(() => {
-        const button = codeElement.closest('.code-block-wrapper').querySelector('.copy-code-btn');
-        if (!button) return;
-        
-        const copyIcon = button.querySelector('.copy-icon');
-        const checkIcon = button.querySelector('.check-icon');
-        const copyText = button.querySelector('.copy-text');
-        
-        copyIcon.style.display = 'none';
-        checkIcon.style.display = 'block';
-        copyText.textContent = 'Copied!';
-        button.classList.add('copied');
-        
-        setTimeout(() => {
-            copyIcon.style.display = 'block';
-            checkIcon.style.display = 'none';
-            copyText.textContent = 'Copy';
-            button.classList.remove('copied');
-        }, 2000);
-    }).catch(err => {
-        console.error('Copy failed:', err);
-    });
-};
-
-/**
- * Initialize syntax highlighting - FIXED
- */
-export function initializeSyntaxHighlighting() {
-    if (window.hljs) {
-        document.querySelectorAll('pre code:not(.highlighted)').forEach((block) => {
-            try {
-                window.hljs.highlightElement(block);
-                block.classList.add('highlighted');
-            } catch (error) {
-                console.error('Highlighting error:', error);
-            }
-        });
-    }
-}
-
-// Auto-highlight on load
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => {
-        setTimeout(initializeSyntaxHighlighting, 100);
-    });
-} else {
-    setTimeout(initializeSyntaxHighlighting, 100);
-}
-
-// Export for use in message renderer
-window.initializeSyntaxHighlighting = initializeSyntaxHighlighting;
-
-console.log('📦 Markdown Parser (FIXED) loaded');
+console.log('📦 Markdown Parser (Fixed) loaded');
