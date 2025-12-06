@@ -1,7 +1,6 @@
 /**
  * ============================================
- * MESSAGE HANDLER - WITH PLAN MANAGEMENT
- * Updated to check limits and use correct models
+ * MESSAGE HANDLER - WITH MODAL WARNINGS
  * ============================================
  */
 
@@ -18,13 +17,12 @@ import {
 import { createChat, saveChat, generateChatTitle } from './chat-manager.js';
 import { navigateToChat } from '../core/router.js';
 import { canSendMessage, incrementUsage, getModelForRequest } from '../plans/plan-manager.js';
-import { showPlanUpgrade } from '../plans/plan-manager.js';
-import { showError, showWarning } from '../ui/notifications.js';
+import { showLimitModal } from '../ui/limit-modal.js';
 
 let isSending = false;
 
 /**
- * Handle send message - WITH PLAN CHECKS
+ * Handle send message - WITH MODAL WARNINGS
  */
 export async function handleSendMessage() {
     if (isSending) return;
@@ -34,19 +32,15 @@ export async function handleSendMessage() {
 
     const user = window.NexusAI.state.get('user');
     if (!user) {
-        showError('Please log in to send messages');
+        showLimitModal('error', 'Please log in to send messages');
         return;
     }
 
     // Check if user can send message
     const permission = canSendMessage(user.uid);
     if (!permission.allowed) {
-        if (permission.reason === 'daily_limit') {
-            showWarning(permission.message);
-            showPlanUpgrade();
-        } else if (permission.reason === 'chat_limit') {
-            showWarning(permission.message);
-        }
+        // Show modal instead of alert
+        showLimitModal(permission.reason, permission.message);
         return;
     }
 
@@ -146,4 +140,4 @@ export async function handleSendMessage() {
     }
 }
 
-console.log('📦 Message Handler (Updated) loaded');
+console.log('📦 Message Handler (Modal) loaded');
