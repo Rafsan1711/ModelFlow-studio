@@ -1,5 +1,5 @@
 /* ============================================
-   CSS RESET - Clean slate
+   CSS RESET
    ============================================ */
 
 *, *::before, *::after {
@@ -13,6 +13,7 @@ html {
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
+    height: 100%;
 }
 
 body {
@@ -22,6 +23,7 @@ body {
     color: var(--text-primary);
     background: var(--bg-primary);
     overflow-x: hidden;
+    height: 100%;
 }
 
 h1, h2, h3, h4, h5, h6 {
