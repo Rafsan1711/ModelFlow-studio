@@ -1,12 +1,11 @@
 /**
  * ============================================
- * CHAT UI - FIXED FILE UPLOAD
+ * CHAT UI - 100% COMPLETE
  * ============================================
  */
 
 import { handleSendMessage } from './message-handler.js';
 import { loadAllChats } from './chat-manager.js';
-import { showPlanUpgrade } from '../plans/plan-manager.js';
 
 let messageInput;
 let sendBtn;
@@ -53,7 +52,9 @@ function createUsageDisplay() {
     planBadge = document.createElement('div');
     planBadge.className = 'plan-badge';
     planBadge.style.cursor = 'pointer';
-    planBadge.onclick = showPlanUpgrade;
+    planBadge.onclick = () => {
+        import('../plans/plan-manager.js').then(m => m.showPlanUpgrade()).catch(e => console.log('Plan modal not loaded'));
+    };
     
     usageDisplay = document.createElement('div');
     usageDisplay.className = 'usage-counter';
@@ -65,13 +66,12 @@ function createUsageDisplay() {
 }
 
 /**
- * Create file upload - FIXED (Single button with icon)
+ * Create file upload
  */
 function createFileUpload() {
     const inputWrapper = document.querySelector('.input-wrapper');
     if (!inputWrapper) return;
     
-    // Create file upload button
     fileUploadBtn = document.createElement('button');
     fileUploadBtn.type = 'button';
     fileUploadBtn.className = 'file-upload-btn';
@@ -86,7 +86,6 @@ function createFileUpload() {
     const fileInput = fileUploadBtn.querySelector('input');
     fileInput.addEventListener('change', handleFileSelect);
     
-    // Click button to trigger file input
     fileUploadBtn.addEventListener('click', (e) => {
         if (e.target.tagName !== 'INPUT') {
             fileInput.click();
@@ -95,7 +94,6 @@ function createFileUpload() {
     
     inputWrapper.insertBefore(fileUploadBtn, messageInput);
     
-    // File preview
     const inputArea = document.querySelector('.input-area');
     filePreview = document.createElement('div');
     filePreview.className = 'file-preview';
@@ -110,9 +108,7 @@ function handleFileSelect(e) {
     if (!file) return;
     
     if (file.size > 5 * 1024 * 1024) {
-        import('../ui/limit-modal.js').then(module => {
-            module.showLimitModal('error', 'File too large. Maximum size is 5MB.');
-        });
+        alert('File too large. Maximum size is 5MB.');
         return;
     }
     
@@ -137,7 +133,7 @@ function showFilePreview(file) {
             <div class="file-preview-name">${file.name}</div>
             <div class="file-preview-size">${sizeKB} KB</div>
         </div>
-        <button class="file-preview-remove" onclick="removeFile()">
+        <button class="file-preview-remove" onclick="window.removeFile()">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M18 6L6 18M6 6l12 12"/>
             </svg>
@@ -148,7 +144,7 @@ function showFilePreview(file) {
 }
 
 /**
- * Remove file (global)
+ * Remove file
  */
 window.removeFile = function() {
     currentFile = null;
@@ -267,56 +263,35 @@ async function loadChats() {
     }
 }
 
-/**
- * Show empty state
- */
 export function showEmptyState() {
     messagesContainer.style.display = 'none';
     emptyState.style.display = 'flex';
     chatTitle.textContent = 'New Chat';
 }
 
-/**
- * Show messages
- */
 export function showMessages() {
     emptyState.style.display = 'none';
     messagesContainer.style.display = 'flex';
 }
 
-/**
- * Clear input
- */
 export function clearInput() {
     messageInput.value = '';
     handleInputChange();
     messageInput.style.height = 'auto';
 }
 
-/**
- * Focus input
- */
 export function focusInput() {
     messageInput.focus();
 }
 
-/**
- * Set chat title
- */
 export function setChatTitle(title) {
     chatTitle.textContent = title;
 }
 
-/**
- * Get input value
- */
 export function getInputValue() {
     return messageInput.value.trim();
 }
 
-/**
- * Disable input
- */
 export function disableInput(disabled = true) {
     messageInput.disabled = disabled;
     sendBtn.disabled = disabled;
@@ -330,9 +305,6 @@ export function disableInput(disabled = true) {
     }
 }
 
-/**
- * Smooth scroll to bottom
- */
 function smoothScrollToBottom() {
     if (messagesContainer) {
         messagesContainer.scrollTo({
@@ -342,4 +314,4 @@ function smoothScrollToBottom() {
     }
 }
 
-console.log('📦 Chat UI (Fixed) loaded');
+console.log('📦 Chat UI loaded');
