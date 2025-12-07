@@ -1,12 +1,13 @@
 /**
  * ============================================
  * MESSAGE RENDERER
- * Render messages with professional formatting
+ * Render messages with feedback buttons
  * ============================================
  */
 
-import { parseMarkdown } from '../utils/markdown-parser.js';
+import { parseMarkdown, initializeSyntaxHighlighting } from '../utils/markdown-parser.js';
 import { formatTime } from '../utils/date-formatter.js';
+import { handleFeedback, handleReport } from '../ui/feedback-handler.js';
 
 const messagesContainer = document.getElementById('messages-container');
 
@@ -17,7 +18,8 @@ export function renderUserMessage(content) {
     const messageDiv = document.createElement('div');
     messageDiv.className = 'message user';
     
-    const userInitial = window.NexusAI.state.get('user')?.email?.[0]?.toUpperCase() || 'U';
+    const user = window.ModelFlow.state.get('user');
+    const userInitial = user?.email?.[0]?.toUpperCase() || 'U';
     
     messageDiv.innerHTML = `
         <div class="message-avatar">${userInitial}</div>
@@ -34,11 +36,13 @@ export function renderUserMessage(content) {
 }
 
 /**
- * Render AI message with formatting
+ * Render AI message with formatting and feedback buttons
  */
 export function renderAIMessage(content, model) {
+    const messageId = `msg-${Date.now()}`;
     const messageDiv = document.createElement('div');
     messageDiv.className = 'message ai';
+    messageDiv.dataset.messageId = messageId;
     
     // Parse markdown to HTML
     const formattedContent = parseMarkdown(content);
@@ -48,6 +52,28 @@ export function renderAIMessage(content, model) {
         <div class="message-content">
             <div class="message-bubble">
                 <div class="ai-content">${formattedContent}</div>
+            </div>
+            <div class="message-actions">
+                <button class="action-btn feedback-btn" data-type="positive" data-message-id="${messageId}">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M14 9V5a3 3 0 00-3-3l-4 9v11h11.28a2 2 0 002-1.7l1.38-9a2 2 0 00-2-2.3zM7 22H4a2 2 0 01-2-2v-7a2 2 0 012-2h3"/>
+                    </svg>
+                    <span>Helpful</span>
+                </button>
+                <button class="action-btn feedback-btn" data-type="negative" data-message-id="${messageId}">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M10 15v4a3 3 0 003 3l4-9V2H5.72a2 2 0 00-2 1.7l-1.38 9a2 2 0 002 2.3zm7-13h2.67A2.31 2.31 0 0122 4v7a2.31 2.31 0 01-2.33 2H17"/>
+                    </svg>
+                    <span>Not helpful</span>
+                </button>
+                <button class="action-btn report-btn" data-message-id="${messageId}">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+                        <line x1="12" y1="9" x2="12" y2="13"/>
+                        <line x1="12" y1="17" x2="12.01" y2="17"/>
+                    </svg>
+                    <span>Report</span>
+                </button>
             </div>
             <div class="message-meta">
                 <span class="message-time">${formatTime(Date.now())}</span>
@@ -63,10 +89,49 @@ export function renderAIMessage(content, model) {
     
     messagesContainer.appendChild(messageDiv);
     
-    // Add copy buttons to code blocks
-    addCopyButtons(messageDiv);
+    // Initialize syntax highlighting
+    initializeSyntaxHighlighting();
+    
+    // Add feedback event listeners
+    setupFeedbackListeners(messageDiv, messageId);
     
     scrollToBottom();
+}
+
+/**
+ * Setup feedback listeners
+ */
+function setupFeedbackListeners(messageDiv, messageId) {
+    // Feedback buttons
+    const feedbackBtns = messageDiv.querySelectorAll('.feedback-btn');
+    feedbackBtns.forEach(btn => {
+        btn.addEventListener('click', async () => {
+            const type = btn.dataset.type;
+            await handleFeedback(messageId, type);
+            
+            // Visual feedback
+            feedbackBtns.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            btn.style.background = 'rgba(88, 166, 255, 0.2)';
+            btn.style.color = 'var(--primary)';
+            
+            showNotification('Thank you for your feedback!', 'success');
+        });
+    });
+    
+    // Report button
+    const reportBtn = messageDiv.querySelector('.report-btn');
+    if (reportBtn) {
+        reportBtn.addEventListener('click', async () => {
+            const reason = prompt('Please describe the issue:');
+            if (reason) {
+                await handleReport(messageId, reason);
+                reportBtn.disabled = true;
+                reportBtn.style.opacity = '0.5';
+                showNotification('Report submitted. Thank you!', 'success');
+            }
+        });
+    }
 }
 
 /**
@@ -113,7 +178,7 @@ export function clearMessages() {
 }
 
 /**
- * Render existing messages (on load)
+ * Render existing messages
  */
 export function renderMessages(messages) {
     clearMessages();
@@ -128,10 +193,12 @@ export function renderMessages(messages) {
 }
 
 /**
- * Scroll to bottom
+ * Scroll to bottom - FIX: Smooth and immediate
  */
 function scrollToBottom() {
-    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    requestAnimationFrame(() => {
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    });
 }
 
 /**
@@ -148,57 +215,42 @@ function escapeHtml(text) {
  */
 function getModelDisplayName(modelId) {
     const models = {
-        'gpt-oss-20b': 'GPT-OSS 20B',
-        'gpt-oss-120b': 'GPT-OSS 120B',
-        'gpt-4': 'GPT-4',
-        'claude': 'Claude',
-        'gemini': 'Gemini'
+        'deepseek-ai/DeepSeek-R1-Distill-Qwen-7B:featherless-ai': 'DeepSeek 7B',
+        'openai/gpt-oss-20b:novita': 'GPT-OSS 20B',
+        'openai/gpt-oss-120b:novita': 'GPT-OSS 120B'
     };
-    return models[modelId] || modelId;
+    return models[modelId] || 'AI Model';
 }
 
 /**
- * Add copy buttons to code blocks
+ * Show notification
  */
-function addCopyButtons(messageDiv) {
-    const codeBlocks = messageDiv.querySelectorAll('pre code');
+function showNotification(message, type = 'info') {
+    const notification = document.createElement('div');
+    notification.className = `notification notification-${type}`;
+    notification.textContent = message;
     
-    codeBlocks.forEach(codeBlock => {
-        const pre = codeBlock.parentElement;
-        
-        // Create header with copy button
-        const header = document.createElement('div');
-        header.className = 'code-block-header';
-        
-        const language = codeBlock.className.replace('language-', '') || 'code';
-        header.innerHTML = `
-            <span class="code-language">${language}</span>
-            <button class="copy-code-btn" data-code="${escapeHtml(codeBlock.textContent)}">
-                Copy
-            </button>
-        `;
-        
-        pre.insertBefore(header, codeBlock);
-        
-        // Add click handler
-        const copyBtn = header.querySelector('.copy-code-btn');
-        copyBtn.addEventListener('click', () => {
-            copyToClipboard(codeBlock.textContent);
-            copyBtn.textContent = 'Copied!';
-            setTimeout(() => {
-                copyBtn.textContent = 'Copy';
-            }, 2000);
-        });
-    });
-}
-
-/**
- * Copy to clipboard
- */
-function copyToClipboard(text) {
-    navigator.clipboard.writeText(text).catch(err => {
-        console.error('Failed to copy:', err);
-    });
+    notification.style.cssText = `
+        position: fixed;
+        bottom: 24px;
+        right: 24px;
+        padding: 16px 24px;
+        background: ${type === 'success' ? '#10b981' : type === 'error' ? '#ef4444' : '#58a6ff'};
+        color: white;
+        border-radius: 12px;
+        font-weight: 600;
+        z-index: 10000;
+        animation: slideInRight 0.3s ease;
+    `;
+    
+    document.body.appendChild(notification);
+    
+    setTimeout(() => {
+        notification.style.transition = 'all 0.3s ease';
+        notification.style.transform = 'translateX(400px)';
+        notification.style.opacity = '0';
+        setTimeout(() => notification.remove(), 300);
+    }, 3000);
 }
 
 console.log('📦 Message Renderer module loaded');
