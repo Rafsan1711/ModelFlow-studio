@@ -1,7 +1,6 @@
 /**
  * ============================================
- * ENHANCED CHAT UI
- * Main chat interface with animations
+ * CHAT UI - Complete Interface Handler
  * ============================================
  */
 
@@ -14,6 +13,8 @@ let messagesContainer;
 let emptyState;
 let chatTitle;
 let charCount;
+let fileUploadBtn;
+let fileInput;
 
 /**
  * Initialize Chat UI
@@ -26,15 +27,14 @@ export async function initChatUI() {
     emptyState = document.getElementById('empty-state');
     chatTitle = document.getElementById('current-chat-title');
     charCount = document.querySelector('.char-count');
+    fileUploadBtn = document.getElementById('file-upload-btn');
+    fileInput = document.getElementById('file-input');
 
     // Setup event listeners
     setupEventListeners();
 
     // Load chats
     await loadChats();
-
-    // Initialize animations
-    initAnimations();
 
     console.log('✅ Chat UI initialized');
 }
@@ -43,8 +43,11 @@ export async function initChatUI() {
  * Setup event listeners
  */
 function setupEventListeners() {
-    // Input changes
+    // Input changes - FIX: Center placeholder
     messageInput.addEventListener('input', handleInputChange);
+    
+    // Auto-resize textarea
+    messageInput.addEventListener('input', autoResizeTextarea);
     
     // Send on Enter (without Shift)
     messageInput.addEventListener('keydown', (e) => {
@@ -52,46 +55,49 @@ function setupEventListeners() {
             e.preventDefault();
             if (!sendBtn.disabled) {
                 handleSendMessage();
-                addSendAnimation();
             }
         }
     });
 
-    // Send button click with animation
+    // Send button click
     sendBtn.addEventListener('click', () => {
         if (!sendBtn.disabled) {
             handleSendMessage();
-            addSendAnimation();
         }
     });
 
-    // Example prompts with animations
+    // File upload
+    if (fileUploadBtn) {
+        fileUploadBtn.addEventListener('click', () => {
+            fileInput.click();
+        });
+    }
+
+    if (fileInput) {
+        fileInput.addEventListener('change', handleFileUpload);
+    }
+
+    // Example prompts
     document.querySelectorAll('.example-prompt').forEach(btn => {
         btn.addEventListener('click', (e) => {
             const prompt = e.currentTarget.dataset.prompt;
             messageInput.value = prompt;
             handleInputChange();
             messageInput.focus();
-            
-            // Add animation
-            e.currentTarget.style.transform = 'scale(0.95)';
-            setTimeout(() => {
-                e.currentTarget.style.transform = '';
-            }, 200);
         });
     });
 
-    // Auto-scroll on new messages
+    // Auto-scroll on new messages - FIX: No blank space
     if (messagesContainer) {
         const observer = new MutationObserver(() => {
-            smoothScrollToBottom();
+            scrollToBottom();
         });
         observer.observe(messagesContainer, { childList: true });
     }
 }
 
 /**
- * Handle input change with character counter
+ * Handle input change - FIX: Character counter
  */
 function handleInputChange() {
     const value = messageInput.value.trim();
@@ -113,18 +119,67 @@ function handleInputChange() {
             charCount.classList.add('warning');
         }
     }
+}
 
-    // Auto-resize textarea with smooth animation
+/**
+ * Auto-resize textarea - FIX: Dynamic height
+ */
+function autoResizeTextarea() {
     messageInput.style.height = 'auto';
     const newHeight = Math.min(messageInput.scrollHeight, 200);
     messageInput.style.height = newHeight + 'px';
+}
+
+/**
+ * Handle file upload
+ */
+async function handleFileUpload(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    // Check file type (only text files)
+    const allowedTypes = ['text/plain', 'application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
     
-    // Add typing animation
-    if (value.length > 0 && !sendBtn.disabled) {
-        sendBtn.classList.add('pulse');
-    } else {
-        sendBtn.classList.remove('pulse');
+    if (!allowedTypes.includes(file.type)) {
+        showNotification('Only text, PDF, and Word documents are allowed', 'error');
+        return;
     }
+
+    // Check file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+        showNotification('File size must be less than 5MB', 'error');
+        return;
+    }
+
+    try {
+        const content = await readFile(file);
+        messageInput.value = `File: ${file.name}\n\n${content}`;
+        handleInputChange();
+        showNotification('File uploaded successfully', 'success');
+    } catch (error) {
+        console.error('Error reading file:', error);
+        showNotification('Error reading file', 'error');
+    }
+
+    // Reset input
+    fileInput.value = '';
+}
+
+/**
+ * Read file content
+ */
+function readFile(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        
+        reader.onload = (e) => {
+            resolve(e.target.result);
+        };
+        
+        reader.onerror = reject;
+        
+        reader.readAsText(file);
+    });
 }
 
 /**
@@ -133,50 +188,41 @@ function handleInputChange() {
 async function loadChats() {
     try {
         const chats = await loadAllChats();
-        window.NexusAI.state.setChats(chats);
+        window.ModelFlow.state.set('chats', chats);
     } catch (error) {
         console.error('❌ Error loading chats:', error);
     }
 }
 
 /**
- * Show empty state with animation
+ * Show empty state
  */
 export function showEmptyState() {
     messagesContainer.style.display = 'none';
     emptyState.style.display = 'flex';
     chatTitle.textContent = 'New Chat';
-    
-    // Trigger AOS animations
-    if (window.AOS) {
-        window.AOS.refresh();
-    }
 }
 
 /**
- * Show messages with animation
+ * Show messages - FIX: No blank space
  */
 export function showMessages() {
     emptyState.style.display = 'none';
     messagesContainer.style.display = 'flex';
     
-    // Smooth fade in
-    messagesContainer.style.opacity = '0';
+    // Ensure proper scrolling
     setTimeout(() => {
-        messagesContainer.style.transition = 'opacity 0.3s ease';
-        messagesContainer.style.opacity = '1';
-    }, 10);
+        scrollToBottom();
+    }, 100);
 }
 
 /**
- * Clear input with animation
+ * Clear input
  */
 export function clearInput() {
     messageInput.value = '';
-    handleInputChange();
-    
-    // Reset height
     messageInput.style.height = 'auto';
+    handleInputChange();
 }
 
 /**
@@ -187,18 +233,10 @@ export function focusInput() {
 }
 
 /**
- * Set chat title with animation
+ * Set chat title
  */
 export function setChatTitle(title) {
-    chatTitle.style.opacity = '0';
-    chatTitle.style.transform = 'translateY(-10px)';
-    
-    setTimeout(() => {
-        chatTitle.textContent = title;
-        chatTitle.style.transition = 'all 0.3s ease';
-        chatTitle.style.opacity = '1';
-        chatTitle.style.transform = 'translateY(0)';
-    }, 150);
+    chatTitle.textContent = title;
 }
 
 /**
@@ -209,7 +247,7 @@ export function getInputValue() {
 }
 
 /**
- * Disable input with visual feedback
+ * Disable input
  */
 export function disableInput(disabled = true) {
     messageInput.disabled = disabled;
@@ -225,119 +263,45 @@ export function disableInput(disabled = true) {
 }
 
 /**
- * Add send button animation
+ * Scroll to bottom - FIX: Proper smooth scroll
  */
-function addSendAnimation() {
-    sendBtn.style.transform = 'scale(0.9) rotate(45deg)';
-    setTimeout(() => {
-        sendBtn.style.transform = '';
-    }, 200);
-}
-
-/**
- * Smooth scroll to bottom
- */
-function smoothScrollToBottom() {
+function scrollToBottom() {
     if (messagesContainer) {
-        messagesContainer.scrollTo({
-            top: messagesContainer.scrollHeight,
-            behavior: 'smooth'
+        requestAnimationFrame(() => {
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
         });
     }
 }
 
 /**
- * Initialize animations
+ * Show notification
  */
-function initAnimations() {
-    // Add ripple effect to buttons
-    document.querySelectorAll('.ripple-effect').forEach(button => {
-        button.addEventListener('click', function(e) {
-            const ripple = document.createElement('span');
-            const rect = this.getBoundingClientRect();
-            const size = Math.max(rect.width, rect.height);
-            const x = e.clientX - rect.left - size / 2;
-            const y = e.clientY - rect.top - size / 2;
-            
-            ripple.style.width = ripple.style.height = size + 'px';
-            ripple.style.left = x + 'px';
-            ripple.style.top = y + 'px';
-            ripple.classList.add('ripple');
-            
-            this.appendChild(ripple);
-            
-            setTimeout(() => ripple.remove(), 600);
-        });
-    });
-
-    // Initialize tooltips with Tippy.js
-    if (window.tippy) {
-        window.tippy('[data-tippy-content]', {
-            placement: 'bottom',
-            arrow: true,
-            animation: 'scale',
-            theme: 'custom'
-        });
-    }
-
-    // Add smooth scroll behavior
-    document.documentElement.style.scrollBehavior = 'smooth';
+function showNotification(message, type = 'info') {
+    const notification = document.createElement('div');
+    notification.className = `notification notification-${type}`;
+    notification.textContent = message;
     
-    // Parallax effect on scroll
-    if (messagesContainer) {
-        messagesContainer.addEventListener('scroll', () => {
-            const scrolled = messagesContainer.scrollTop;
-            const messages = messagesContainer.querySelectorAll('.message');
-            
-            messages.forEach((message, index) => {
-                const speed = 0.1 + (index * 0.01);
-                const yPos = -(scrolled * speed);
-                message.style.transform = `translateY(${yPos}px)`;
-            });
-        });
-    }
-
-    // Add GSAP animations if available
-    if (window.gsap) {
-        // Animate header on scroll
-        window.gsap.to('.chat-header', {
-            scrollTrigger: {
-                trigger: '.messages-container',
-                start: 'top top',
-                end: 'bottom top',
-                scrub: true
-            },
-            backgroundColor: 'rgba(24, 24, 27, 0.95)',
-            boxShadow: '0 4px 20px rgba(0, 0, 0, 0.3)'
-        });
-    }
+    notification.style.cssText = `
+        position: fixed;
+        bottom: 24px;
+        right: 24px;
+        padding: 16px 24px;
+        background: ${type === 'success' ? '#10b981' : type === 'error' ? '#ef4444' : '#58a6ff'};
+        color: white;
+        border-radius: 12px;
+        font-weight: 600;
+        z-index: 10000;
+        animation: slideInRight 0.3s ease;
+    `;
+    
+    document.body.appendChild(notification);
+    
+    setTimeout(() => {
+        notification.style.transition = 'all 0.3s ease';
+        notification.style.transform = 'translateX(400px)';
+        notification.style.opacity = '0';
+        setTimeout(() => notification.remove(), 300);
+    }, 3000);
 }
 
-/**
- * Add particle effect (optional, for celebration)
- */
-export function addParticleEffect(x, y) {
-    for (let i = 0; i < 20; i++) {
-        const particle = document.createElement('div');
-        particle.className = 'particle';
-        particle.style.left = x + 'px';
-        particle.style.top = y + 'px';
-        particle.style.animationDelay = (i * 0.1) + 's';
-        
-        document.body.appendChild(particle);
-        
-        setTimeout(() => particle.remove(), 3000);
-    }
-}
-
-/**
- * Show notification (if notifications module is loaded)
- */
-export function showNotification(message, type = 'info') {
-    // This will be handled by notifications.js module
-    if (window.NexusAI && window.NexusAI.showNotification) {
-        window.NexusAI.showNotification(message, type);
-    }
-}
-
-console.log('📦 Enhanced Chat UI module loaded');
+console.log('📦 Chat UI module loaded');
