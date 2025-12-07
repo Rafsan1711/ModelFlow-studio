@@ -1,7 +1,6 @@
 /**
  * ============================================
- * NEXUSAI BACKEND SERVER
- * Express server with HuggingFace integration
+ * MODELFLOW BACKEND SERVER - CORS FIXED
  * ============================================
  */
 
@@ -14,37 +13,39 @@ const healthRoutes = require('./routes/health');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// CORS Configuration
+// ✅ CORS Configuration - FIXED
 const allowedOrigins = [
     'http://localhost:5500',
     'http://127.0.0.1:5500',
-    'https://nexusai.netlify.app', // Add your Netlify domain
-    'https://your-domain.com'
+    'https://modelflow-studio-ai.onrender.com', // ✅ Add your frontend URL
+    'https://your-custom-domain.com' // Add any custom domains
 ];
 
 app.use(cors({
     origin: function(origin, callback) {
-        // Allow requests with no origin (mobile apps, curl, etc)
+        // Allow requests with no origin (mobile apps, curl, Postman)
         if (!origin) return callback(null, true);
         
         if (allowedOrigins.indexOf(origin) !== -1) {
             callback(null, true);
         } else {
             console.warn('⚠️ Blocked origin:', origin);
-            callback(null, true); // Allow anyway for development
+            // ✅ Allow anyway for development (remove in production if needed)
+            callback(null, true);
         }
     },
-    methods: ['GET', 'POST', 'OPTIONS'],
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
-    credentials: true
+    credentials: true,
+    optionsSuccessStatus: 200
 }));
 
-// Handle preflight
+// ✅ Handle preflight requests
 app.options('*', cors());
 
 // Body parsers
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Request logging
 app.use((req, res, next) => {
@@ -59,7 +60,7 @@ app.use('/api', chatRoutes);
 // Root endpoint
 app.get('/', (req, res) => {
     res.json({
-        message: 'NexusAI Backend API',
+        message: 'ModelFlow Studio Backend API',
         version: '1.0.0',
         status: 'running',
         endpoints: {
@@ -90,7 +91,7 @@ app.use((err, req, res, next) => {
 app.listen(PORT, '0.0.0.0', () => {
     console.log('');
     console.log('🚀 ============================================');
-    console.log('   NexusAI Backend Server Started');
+    console.log('   ModelFlow Studio Backend Server Started');
     console.log('   ============================================');
     console.log(`   📡 Server: http://localhost:${PORT}`);
     console.log(`   🔑 HF Token: ${process.env.HF_TOKEN ? '✅ Set' : '❌ Missing'}`);
