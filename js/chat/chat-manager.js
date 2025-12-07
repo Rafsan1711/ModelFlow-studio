@@ -15,11 +15,13 @@ export async function createChat(title, messages = []) {
     if (!user) throw new Error('No user logged in');
 
     const chatId = `chat_${Date.now()}`;
+    const plan = window.ModelFlow.state.get('plan');
+    
     const chatData = {
         id: chatId,
         title: title,
         messages: messages,
-        model: window.NexusAI.state.get('selectedModel'),
+        model: plan.model,
         createdAt: Date.now(),
         updatedAt: Date.now(),
         userId: user.uid
@@ -36,7 +38,7 @@ export async function createChat(title, messages = []) {
 }
 
 /**
- * Save chat (create or update)
+ * Save chat (update)
  */
 export async function saveChat(chatId, title, messages) {
     const user = auth.currentUser;
@@ -46,7 +48,7 @@ export async function saveChat(chatId, title, messages) {
         id: chatId,
         title: title,
         messages: messages,
-        model: window.NexusAI.state.get('selectedModel'),
+        model: window.ModelFlow.state.get('plan').model,
         updatedAt: Date.now(),
         userId: user.uid
     };
@@ -132,11 +134,14 @@ export async function deleteChat(chatId) {
 }
 
 /**
- * Get chat title from first message
+ * Generate chat title from first message
  */
 export function generateChatTitle(message) {
     if (!message) return 'New Chat';
-    return message.length > 50 ? message.substring(0, 50) + '...' : message;
+    
+    // Clean and truncate
+    const cleaned = message.replace(/\n/g, ' ').trim();
+    return cleaned.length > 50 ? cleaned.substring(0, 50) + '...' : cleaned;
 }
 
 console.log('📦 Chat Manager module loaded');
