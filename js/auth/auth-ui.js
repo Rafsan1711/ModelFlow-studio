@@ -1,7 +1,7 @@
 /**
  * ============================================
  * AUTH UI
- * Login/Signup screen interactions
+ * Handle authentication UI interactions
  * ============================================
  */
 
@@ -106,7 +106,6 @@ async function handleLoginSubmit(e) {
     if (!result.success) {
         showError(loginError, result.error);
     }
-    // Success is handled by auth state listener
 }
 
 /**
@@ -138,7 +137,6 @@ async function handleSignupSubmit(e) {
     if (!result.success) {
         showError(signupError, result.error);
     }
-    // Success is handled by auth state listener
 }
 
 /**
@@ -155,7 +153,6 @@ async function handleGoogleSignin() {
     if (!result.success) {
         showError(loginError, result.error);
     }
-    // Success is handled by auth state listener
 }
 
 /**
