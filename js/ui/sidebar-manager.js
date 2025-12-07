@@ -10,13 +10,13 @@ import { renderMessages, clearMessages } from '../chat/message-renderer.js';
 import { showMessages, showEmptyState, setChatTitle } from '../chat/chat-ui.js';
 import { handleSignOut } from '../auth/auth-handler.js';
 import { formatTime } from '../utils/date-formatter.js';
-import { navigateToChat, navigateToHome } from '../core/router.js';
 
 let sidebar;
 let toggleSidebarBtn;
 let closeSidebarBtn;
 let newChatBtn;
-let settingsBtn;
+let upgradeBtn;
+let adminBtn;
 let logoutBtn;
 let chatHistoryList;
 let sidebarOverlay;
@@ -30,7 +30,8 @@ export function initSidebar() {
     toggleSidebarBtn = document.getElementById('toggle-sidebar-btn');
     closeSidebarBtn = document.getElementById('close-sidebar-btn');
     newChatBtn = document.getElementById('new-chat-btn');
-    settingsBtn = document.getElementById('settings-btn');
+    upgradeBtn = document.getElementById('upgrade-btn');
+    adminBtn = document.getElementById('admin-btn');
     logoutBtn = document.getElementById('logout-btn');
     chatHistoryList = document.getElementById('chat-history-list');
 
@@ -44,7 +45,7 @@ export function initSidebar() {
     loadChatHistory();
 
     // Make reload function global
-    window.NexusAI.reloadSidebar = loadChatHistory;
+    window.ModelFlow.reloadSidebar = loadChatHistory;
 
     console.log('✅ Sidebar initialized');
 }
@@ -56,12 +57,13 @@ function setupEventListeners() {
     toggleSidebarBtn.addEventListener('click', toggleSidebar);
     closeSidebarBtn.addEventListener('click', toggleSidebar);
     newChatBtn.addEventListener('click', handleNewChat);
-    settingsBtn.addEventListener('click', openSettings);
     
-    // Settings button in header (mobile)
-    const headerSettingsBtn = document.getElementById('header-settings-btn');
-    if (headerSettingsBtn) {
-        headerSettingsBtn.addEventListener('click', openSettings);
+    if (upgradeBtn) {
+        upgradeBtn.addEventListener('click', showUpgradeModal);
+    }
+    
+    if (adminBtn) {
+        adminBtn.addEventListener('click', showAdminPanel);
     }
 
     logoutBtn.addEventListener('click', async () => {
@@ -104,7 +106,7 @@ function toggleSidebar() {
 export async function loadChatHistory() {
     try {
         const chats = await loadAllChats();
-        window.NexusAI.state.setChats(chats);
+        window.ModelFlow.state.set('chats', chats);
         renderChatHistory(chats);
     } catch (error) {
         console.error('❌ Error loading chat history:', error);
@@ -143,7 +145,7 @@ function createChatItem(chat) {
     item.className = 'chat-item';
     item.dataset.chatId = chat.id;
 
-    const currentChatId = window.NexusAI.state.get('currentChatId');
+    const currentChatId = window.ModelFlow.state.get('currentChatId');
     if (chat.id === currentChatId) {
         item.classList.add('active');
     }
@@ -178,7 +180,7 @@ function createChatItem(chat) {
 async function loadChat(chat) {
     try {
         // Set current chat
-        window.NexusAI.state.setCurrentChat(chat.id, chat.messages || []);
+        window.ModelFlow.state.setCurrentChat(chat.id, chat.messages || []);
 
         // Update UI
         showMessages();
@@ -191,9 +193,6 @@ async function loadChat(chat) {
             item.classList.toggle('active', item.dataset.chatId === chat.id);
         });
 
-        // Update URL
-        navigateToChat(chat.id);
-
     } catch (error) {
         console.error('❌ Error loading chat:', error);
     }
@@ -203,8 +202,15 @@ async function loadChat(chat) {
  * Handle new chat
  */
 function handleNewChat() {
+    // Check chat limit
+    const canSend = window.ModelFlow.state.canSendMessage();
+    if (!canSend.allowed && canSend.limitType === 'chats') {
+        showLimitModal();
+        return;
+    }
+
     // Reset state
-    window.NexusAI.state.setCurrentChat(null, []);
+    window.ModelFlow.state.setCurrentChat(null, []);
 
     // Update UI
     showEmptyState();
@@ -216,8 +222,19 @@ function handleNewChat() {
         item.classList.remove('active');
     });
 
-    // Navigate to home
-    navigateToHome();
+    // Close sidebar on mobile
+    if (window.innerWidth <= 768) {
+        toggleSidebar();
+    }
+}
+
+/**
+ * Show upgrade modal
+ */
+function showUpgradeModal() {
+    import('./upgrade-modal.js').then(module => {
+        module.openUpgradeModal();
+    });
 
     // Close sidebar on mobile
     if (window.innerWidth <= 768) {
@@ -226,18 +243,48 @@ function handleNewChat() {
 }
 
 /**
- * Open settings
+ * Show admin panel
  */
-function openSettings() {
-    // Import and open settings modal
-    import('./settings-modal.js').then(module => {
-        module.openSettingsModal();
+function showAdminPanel() {
+    import('./admin-panel.js').then(module => {
+        module.openAdminPanel();
     });
 
     // Close sidebar on mobile
     if (window.innerWidth <= 768) {
         toggleSidebar();
     }
+}
+
+/**
+ * Show limit modal
+ */
+function showLimitModal() {
+    const modal = document.createElement('div');
+    modal.className = 'modal active';
+    
+    modal.innerHTML = `
+        <div class="modal-content glass-effect" style="max-width: 500px;">
+            <div class="modal-header">
+                <h3 class="gradient-text">⚠️ Daily Limit Reached</h3>
+                <button class="close-modal-btn" onclick="this.closest('.modal').remove()">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M18 6L6 18M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p style="font-size: 16px; line-height: 1.6; color: var(--text-primary); margin-bottom: 24px;">
+                    You've reached your daily chat limit. Upgrade to continue chatting!
+                </p>
+                <button class="auth-btn primary" onclick="document.getElementById('upgrade-btn').click(); this.closest('.modal').remove();">
+                    Upgrade Plan
+                </button>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
 }
 
 /**
