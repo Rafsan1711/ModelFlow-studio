@@ -1,7 +1,7 @@
 /**
  * ============================================
  * AUTH HANDLER
- * Login, Signup, Logout functionality
+ * Authentication functions
  * ============================================
  */
 
@@ -58,12 +58,12 @@ export async function handleSignOut() {
         await auth.signOut();
         console.log('✅ User signed out');
         
-        // Clear local state
-        if (window.NexusAI && window.NexusAI.state) {
-            window.NexusAI.state.reset();
+        // Clear state
+        if (window.ModelFlow && window.ModelFlow.state) {
+            window.ModelFlow.state.reset();
         }
         
-        // Reload page to show auth screen
+        // Reload page
         window.location.href = '/';
         
         return { success: true };
@@ -74,14 +74,7 @@ export async function handleSignOut() {
 }
 
 /**
- * Get current user
- */
-export function getCurrentUser() {
-    return auth.currentUser;
-}
-
-/**
- * Get user error message
+ * Get error message
  */
 function getErrorMessage(errorCode) {
     const errors = {
