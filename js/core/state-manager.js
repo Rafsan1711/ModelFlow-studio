@@ -1,7 +1,7 @@
 /**
  * ============================================
  * STATE MANAGER
- * Global state management for the app
+ * Global state management with plan limits
  * ============================================
  */
 
@@ -10,16 +10,26 @@ export class StateManager {
         this.state = {
             currentChatId: null,
             currentMessages: [],
-            selectedModel: 'gpt-oss-20b', // Default model
+            selectedModel: 'deepseek-ai/DeepSeek-R1-Distill-Qwen-7B:featherless-ai',
             chats: [],
-            settings: {
-                defaultModel: 'gpt-oss-20b',
-                theme: 'dark'
+            user: null,
+            plan: {
+                type: 'free', // 'free', 'pro', 'max'
+                responsesLeft: 5,
+                chatsLeft: 2,
+                maxResponses: 5,
+                maxChats: 2,
+                model: 'deepseek-ai/DeepSeek-R1-Distill-Qwen-7B:featherless-ai'
             },
-            user: null
+            usage: {
+                responses: 0,
+                chats: 0,
+                lastReset: Date.now()
+            }
         };
 
         this.listeners = new Map();
+        this.loadFromLocalStorage();
     }
 
     /**
@@ -36,27 +46,14 @@ export class StateManager {
         const oldValue = this.state[key];
         this.state[key] = value;
 
+        // Save to localStorage
+        this.saveToLocalStorage();
+
         // Notify listeners
         if (this.listeners.has(key)) {
             this.listeners.get(key).forEach(callback => {
                 callback(value, oldValue);
             });
-        }
-    }
-
-    /**
-     * Update nested state
-     */
-    update(key, updates) {
-        if (typeof this.state[key] === 'object') {
-            this.state[key] = { ...this.state[key], ...updates };
-            
-            // Notify listeners
-            if (this.listeners.has(key)) {
-                this.listeners.get(key).forEach(callback => {
-                    callback(this.state[key]);
-                });
-            }
         }
     }
 
@@ -69,33 +66,8 @@ export class StateManager {
         }
         this.listeners.get(key).add(callback);
 
-        // Return unsubscribe function
         return () => {
             this.listeners.get(key).delete(callback);
-        };
-    }
-
-    /**
-     * Get all state
-     */
-    getAll() {
-        return { ...this.state };
-    }
-
-    /**
-     * Reset state
-     */
-    reset() {
-        this.state = {
-            currentChatId: null,
-            currentMessages: [],
-            selectedModel: 'gpt-oss-20b',
-            chats: [],
-            settings: {
-                defaultModel: 'gpt-oss-20b',
-                theme: 'dark'
-            },
-            user: null
         };
     }
 
@@ -108,60 +80,135 @@ export class StateManager {
     }
 
     /**
-     * Add message to current chat
+     * Add message
      */
     addMessage(message) {
         const messages = [...this.state.currentMessages, message];
         this.set('currentMessages', messages);
+        
+        // Update usage
+        if (message.role === 'assistant') {
+            this.incrementResponses();
+        }
     }
 
     /**
-     * Update message
+     * Set plan
      */
-    updateMessage(index, updates) {
-        const messages = [...this.state.currentMessages];
-        messages[index] = { ...messages[index], ...updates };
-        this.set('currentMessages', messages);
+    setPlan(plan) {
+        this.set('plan', { ...this.state.plan, ...plan });
     }
 
     /**
-     * Set chats list
+     * Check if can send message
      */
-    setChats(chats) {
-        this.set('chats', chats);
+    canSendMessage() {
+        const plan = this.state.plan;
+        
+        // Owner has infinite usage
+        if (this.isOwner()) {
+            return { allowed: true };
+        }
+
+        // Check chat limit
+        if (plan.chatsLeft <= 0) {
+            return {
+                allowed: false,
+                reason: 'Daily chat limit reached',
+                limitType: 'chats'
+            };
+        }
+
+        // Check response limit
+        if (plan.responsesLeft <= 0) {
+            return {
+                allowed: false,
+                reason: 'Response limit reached for this chat',
+                limitType: 'responses'
+            };
+        }
+
+        return { allowed: true };
     }
 
     /**
-     * Add new chat
+     * Increment responses
      */
-    addChat(chat) {
-        const chats = [chat, ...this.state.chats];
-        this.set('chats', chats);
+    incrementResponses() {
+        const plan = this.state.plan;
+        if (!this.isOwner()) {
+            this.setPlan({
+                responsesLeft: Math.max(0, plan.responsesLeft - 1)
+            });
+        }
     }
 
     /**
-     * Update chat
+     * Start new chat
      */
-    updateChat(chatId, updates) {
-        const chats = this.state.chats.map(chat =>
-            chat.id === chatId ? { ...chat, ...updates } : chat
-        );
-        this.set('chats', chats);
+    startNewChat() {
+        const plan = this.state.plan;
+        if (!this.isOwner() && plan.chatsLeft > 0) {
+            this.setPlan({
+                chatsLeft: plan.chatsLeft - 1,
+                responsesLeft: plan.maxResponses
+            });
+        }
     }
 
     /**
-     * Delete chat
+     * Is owner
      */
-    deleteChat(chatId) {
-        const chats = this.state.chats.filter(chat => chat.id !== chatId);
-        this.set('chats', chats);
+    isOwner() {
+        return this.state.user?.email === '123@email.com';
     }
 
     /**
-     * Set selected model
+     * Reset daily limits
      */
-    setModel(model) {
-        this.set('selectedModel', model);
+    resetDailyLimits() {
+        const now = Date.now();
+        const lastReset = this.state.usage.lastReset;
+        const oneDayMs = 24 * 60 * 60 * 1000;
+
+        if (now - lastReset >= oneDayMs) {
+            const plan = this.state.plan;
+            this.setPlan({
+                responsesLeft: plan.maxResponses,
+                chatsLeft: plan.maxChats
+            });
+            this.set('usage', {
+                responses: 0,
+                chats: 0,
+                lastReset: now
+            });
+        }
+    }
+
+    /**
+     * Load from localStorage
+     */
+    loadFromLocalStorage() {
+        try {
+            const saved = localStorage.getItem('modelflow_state');
+            if (saved) {
+                const parsed = JSON.parse(saved);
+                this.state = { ...this.state, ...parsed };
+            }
+        } catch (error) {
+            console.error('Error loading state:', error);
+        }
+    }
+
+    /**
+     * Save to localStorage
+     */
+    saveToLocalStorage() {
+        try {
+            localStorage.setItem('modelflow_state', JSON.stringify(this.state));
+        } catch (error) {
+            console.error('Error saving state:', error);
+        }
     }
 
     /**
@@ -169,13 +216,55 @@ export class StateManager {
      */
     setUser(user) {
         this.set('user', user);
+        
+        // Load user's plan from Firebase
+        if (user) {
+            this.loadUserPlan(user.uid);
+        }
     }
 
     /**
-     * Set settings
+     * Load user plan from Firebase
      */
-    setSettings(settings) {
-        this.set('settings', { ...this.state.settings, ...settings });
+    async loadUserPlan(userId) {
+        try {
+            const { database } = await import('../auth/firebase-config.js');
+            const snapshot = await database.ref(`users/${userId}/plan`).once('value');
+            const plan = snapshot.val();
+            
+            if (plan) {
+                this.setPlan(plan);
+            }
+        } catch (error) {
+            console.error('Error loading plan:', error);
+        }
+    }
+
+    /**
+     * Reset state
+     */
+    reset() {
+        this.state = {
+            currentChatId: null,
+            currentMessages: [],
+            selectedModel: 'deepseek-ai/DeepSeek-R1-Distill-Qwen-7B:featherless-ai',
+            chats: [],
+            user: null,
+            plan: {
+                type: 'free',
+                responsesLeft: 5,
+                chatsLeft: 2,
+                maxResponses: 5,
+                maxChats: 2,
+                model: 'deepseek-ai/DeepSeek-R1-Distill-Qwen-7B:featherless-ai'
+            },
+            usage: {
+                responses: 0,
+                chats: 0,
+                lastReset: Date.now()
+            }
+        };
+        this.saveToLocalStorage();
     }
 }
 
