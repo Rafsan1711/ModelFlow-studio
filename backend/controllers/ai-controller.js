@@ -1,21 +1,48 @@
 /**
  * ============================================
  * AI CONTROLLER
- * Handle AI model requests
+ * Handle AI model requests with multi-model support
  * ============================================
  */
 
 const fetch = require('node-fetch');
-const { MODELS } = require('../config/models');
+
+// Model configurations
+const MODELS = {
+    'deepseek-ai/DeepSeek-R1-Distill-Qwen-7B:featherless-ai': {
+        id: 'deepseek-ai/DeepSeek-R1-Distill-Qwen-7B:featherless-ai',
+        name: 'DeepSeek 7B',
+        endpoint: 'https://router.huggingface.co/v1/chat/completions',
+        model: 'deepseek-ai/DeepSeek-R1-Distill-Qwen-7B:featherless-ai',
+        maxTokens: 4096,
+        temperature: 0.7
+    },
+    'openai/gpt-oss-20b:novita': {
+        id: 'openai/gpt-oss-20b:novita',
+        name: 'GPT-OSS 20B',
+        endpoint: 'https://router.huggingface.co/v1/chat/completions',
+        model: 'openai/gpt-oss-20b:novita',
+        maxTokens: 4096,
+        temperature: 0.7
+    },
+    'openai/gpt-oss-120b:novita': {
+        id: 'openai/gpt-oss-120b:novita',
+        name: 'GPT-OSS 120B',
+        endpoint: 'https://router.huggingface.co/v1/chat/completions',
+        model: 'openai/gpt-oss-120b:novita',
+        maxTokens: 8192,
+        temperature: 0.8
+    }
+};
 
 /**
  * Get AI response
  */
-async function getAIResponse(userMessage, modelId = 'gpt-oss-20b', history = []) {
-    const modelConfig = MODELS[modelId] || MODELS['gpt-oss-20b'];
+async function getAIResponse(userMessage, modelId, history = []) {
+    const modelConfig = MODELS[modelId] || MODELS['deepseek-ai/DeepSeek-R1-Distill-Qwen-7B:featherless-ai'];
 
     try {
-        console.log(`🤖 Getting response from ${modelId}...`);
+        console.log(`🤖 Getting response from ${modelConfig.name}...`);
 
         const response = await callChatAPI(userMessage, modelConfig, history);
 
@@ -28,21 +55,21 @@ async function getAIResponse(userMessage, modelId = 'gpt-oss-20b', history = [])
         };
 
     } catch (error) {
-        console.error(`❌ ${modelId} Error:`, error.message);
+        console.error(`❌ ${modelConfig.name} Error:`, error.message);
         
-        // Try fallback to GPT-OSS 20B if not already using it
-        if (modelId !== 'gpt-oss-20b') {
-            console.log('🔄 Falling back to GPT-OSS 20B...');
+        // Try fallback to DeepSeek if not already using it
+        if (modelId !== 'deepseek-ai/DeepSeek-R1-Distill-Qwen-7B:featherless-ai') {
+            console.log('🔄 Falling back to DeepSeek 7B...');
             try {
                 const fallbackResponse = await callChatAPI(
                     userMessage, 
-                    MODELS['gpt-oss-20b'], 
+                    MODELS['deepseek-ai/DeepSeek-R1-Distill-Qwen-7B:featherless-ai'], 
                     history
                 );
                 
                 return {
-                    response: `⚠️ **${modelConfig.name} unavailable. Using GPT-OSS 20B.**\n\n${fallbackResponse}`,
-                    model: 'gpt-oss-20b',
+                    response: `⚠️ **${modelConfig.name} unavailable. Using DeepSeek 7B.**\n\n${fallbackResponse}`,
+                    model: 'deepseek-ai/DeepSeek-R1-Distill-Qwen-7B:featherless-ai',
                     fallback: true,
                     timestamp: Date.now()
                 };
@@ -62,7 +89,7 @@ async function callChatAPI(userMessage, modelConfig, history) {
     const messages = [
         {
             role: 'system',
-            content: `You are ModelFlow Studio, a helpful and intelligent assistant. 
+            content: `You are ModelFlow Studio AI, a helpful and intelligent assistant.
 
 FORMAT YOUR RESPONSES PROFESSIONALLY:
 - Use **bold** for important terms
@@ -70,8 +97,9 @@ FORMAT YOUR RESPONSES PROFESSIONALLY:
 - Use bullet points with - for lists
 - Use numbered lists with 1. 2. 3. for steps
 - Use \`code\` for technical terms
+- Use code blocks with \`\`\`language for multi-line code
+- Use tables when presenting structured data
 - Structure your response with clear sections
-- Be accurate, helpful, and well-formatted
 
 Always provide clear, concise, and accurate information.`
         }
