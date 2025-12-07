@@ -1,6 +1,6 @@
 /**
  * ============================================
- * API HANDLER
+ * AI API HANDLER
  * Send messages to backend API
  * ============================================
  */
@@ -52,14 +52,14 @@ async function checkBackendHealth() {
 /**
  * Send message to AI
  */
-export async function sendMessageToAI(message, history = [], modelId = 'gpt-oss-20b') {
+export async function sendMessageToAI(message, model, history = []) {
     // Check backend health first
     if (!healthCheckDone) {
         await checkBackendHealth();
     }
 
     try {
-        console.log(`📤 Sending message to AI (${modelId})...`);
+        console.log(`📤 Sending message to AI (${model})...`);
 
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 60000); // 60s timeout
@@ -72,7 +72,7 @@ export async function sendMessageToAI(message, history = [], modelId = 'gpt-oss-
             body: JSON.stringify({
                 message: message,
                 history: history,
-                model: modelId
+                model: model
             }),
             signal: controller.signal
         });
@@ -92,7 +92,7 @@ export async function sendMessageToAI(message, history = [], modelId = 'gpt-oss-
         return {
             success: true,
             message: data.response,
-            model: data.model || modelId,
+            model: data.model || model,
             timestamp: Date.now()
         };
 
@@ -139,5 +139,5 @@ export function getBackendStatus() {
 // Check backend health on load
 checkBackendHealth();
 
-console.log('📦 API Handler module loaded');
+console.log('📦 AI API Handler module loaded');
 console.log('🔗 Backend URL:', API_URL);
